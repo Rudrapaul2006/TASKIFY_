@@ -4,11 +4,13 @@ import chalk from 'chalk'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import { Server } from 'socket.io'
-import {createServer} from 'http'
+import { createServer } from 'http'
 
 import UserRouter from './Routes/user.route.js'
 import { DBConnection } from './Utils/ConnectDB.js'
 import { connectIo } from './Utils/Socket.js'
+import WorkspaceRouter from './Routes/workspace.route.js'
+import { redisClient } from './Utils/RedisClint.js'
 
 
 dotenv.config()
@@ -39,6 +41,14 @@ app.get('/', (req, res) => {
 
 // userRoute's
 app.use('/api/user', UserRouter)
+app.use('/api/workspace', WorkspaceRouter)
+
+app.use((req, res) => {
+    return res.status(404).json({
+        success: false,
+        message: "Route not found",
+    })
+})
 
 let port = process.env.PORT || 5000
 
@@ -47,5 +57,6 @@ connectIo(io)
 
 server.listen(port, () => {
     DBConnection()
+    redisClient  // connect redis client
     console.log(chalk.blue(`Server is running on port ${chalk.green(port)}`))
 })

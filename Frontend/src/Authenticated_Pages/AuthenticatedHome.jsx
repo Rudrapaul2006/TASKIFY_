@@ -13,7 +13,7 @@ const AuthenticatedHome = () => {
   return (
     <>
       <div> <Auth_Navbar /> </div>
-
+      
     </>
   )
 }

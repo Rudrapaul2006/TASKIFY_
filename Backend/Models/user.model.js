@@ -24,6 +24,6 @@ let userSchema = new mongoose.Schema({
     }
 } , { timestamps: true })
 
-let userModel = mongoose.model('users', userSchema)
+let userModel = mongoose.model('user', userSchema)
 export default userModel
     

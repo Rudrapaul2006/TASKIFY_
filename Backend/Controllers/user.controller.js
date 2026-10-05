@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import userModel from '../Models/user.model.js'
+import mongoose from 'mongoose'
 
 
 // User registration :
@@ -20,7 +21,7 @@ export let userRegistration = async (req, res) => {
         let token = await jwt.sign({ id: newUser._id, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '7d' })
         res.cookie("token", token, { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 })
 
-        res.status(201).json({ message: "User registered successfully", success: true, user: newUser , token })
+        res.status(201).json({ message: "User registered successfully", success: true, user: newUser, token })
 
     } catch (error) {
         console.log("Registration error:", error.message)
@@ -45,8 +46,9 @@ export let userLogin = async (req, res) => {
 
         res.status(200).json({
             message: `${user.name || "User"} logged in successfully`,
-            success: true, user,
-            token
+            success: true,
+            user,
+            // token
         })
 
     } catch (error) {
@@ -59,13 +61,18 @@ export let userLogin = async (req, res) => {
 // Full route : ../api/user/logout
 export let userLogout = async (req, res) => {
     try {
+        let user = req.user
+        if (!user || !user?._id || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({ message: "User not found", success: false })
+        }
+
         res.clearCookie("token", {
             httpOnly: true,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production'
         })
 
-        return res.status(200).json({ message: "Logged out successfully", success: true })
+        return res.status(200).json({ message: `${user?.name || "User"} logged out successfully`, success: true })
 
     } catch (error) {
         console.log("Logout error:", error.message)
@@ -77,11 +84,12 @@ export let userLogout = async (req, res) => {
 // Full route : ../api/user/profile
 export let getProfile = async (req, res) => {
     try {
+        let user = req.user
 
-        let user = await userModel.findById(req.id)
-        if (!user) {
+        if (!user || !user?._id || !mongoose.Types.ObjectId.isValid(user?._id)) {
             return res.status(404).json({ message: "User not found", success: false })
         }
+
         res.status(200).json({ success: true, user })
 
     } catch (error) {
@@ -95,18 +103,19 @@ export let getProfile = async (req, res) => {
 export let userUpdate = async () => {
     try {
         let user = req.user
-        if (!user){
-            res.status(400).json({message: "User not found" , success: false})
-        } 
 
-        let {name} = req.body
-        if(!name){
-            res.status(400).json({message: "Name is required" , success: false})
+        if (!user || !user?._id || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({ message: "User not found", success: false })
         }
-        
+
+        let { name } = req.body
+        if (!name) {
+            return res.status(400).json({ message: "Name is required", success: false })
+        }
+
     } catch (err) {
-        console.log(err);
-        res.status(500).json({message : "Server error in user update api" , success : false})
+        console.log(err)
+        res.status(500).json({ message: "Server error in user update api", success: false })
     }
 }
 

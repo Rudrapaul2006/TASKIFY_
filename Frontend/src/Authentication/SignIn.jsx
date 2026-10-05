@@ -2,7 +2,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { FcGoogle } from "react-icons/fc";
 import { IoMdArrowBack } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser, setUserLoading } from "../Redux_Store/userSlice";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -11,6 +11,7 @@ import { app } from "../Firebase/Firebase";
 const SignIn = () => {
     let navigate = useNavigate();
     let dispatch = useDispatch();
+    let { theme } = useSelector(state => state.theme)
 
     //Google login :
     let googleSignin = async () => {
@@ -20,15 +21,15 @@ const SignIn = () => {
             let provider = new GoogleAuthProvider()
             let auth = getAuth(app)
 
-            let googleData = await signInWithPopup(auth, provider)           
+            let googleData = await signInWithPopup(auth, provider)
 
-            let res = await axios.post(`${import.meta.env.VITE_user_endpoint}/login` , {email: googleData.user.email} , {withCredentials: true})
-            if (res.data.success){
+            let res = await axios.post(`${import.meta.env.VITE_user_endpoint}/login`, { email: googleData.user.email }, { withCredentials: true })
+            if (res.data.success) {
                 toast.success(res.data.message || `Login Successful`)
                 dispatch(setUser(res.data.user))
                 navigate("/authenticatedhome")
-            } 
-            
+            }
+
         } catch (error) {
             console.log(error)
             toast.error(error?.response?.data?.message || "Something went wrong")
@@ -38,62 +39,71 @@ const SignIn = () => {
     }
 
     return (
-            <>
-                {/* Back Button */}
-                <div className="mx-4 lg:mx-20 py-5 lg:py-10 bg-white">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full
-                         active:scale-95 transition duration-300 cursor-pointer"
-                    >
-                        <IoMdArrowBack size={22} />
-                    </button>
-                </div>
-    
-                {/* Signup Section */}
-                <div className="min-h-[72vh] bg-white flex items-center justify-center px-4">
-    
-                    <div className="w-full max-w-[520px] bg-white rounded-md shadow-md
-                            hover:shadow-lg px-10 py-10 transition duration-300">
-    
-                        {/* Logo */}
-                        <div className="flex justify-center items-center gap-3 mb-8">
-                            <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center">
-                                <div className="flex gap-1">
-                                    <span className="w-3 h-6 bg-white rounded-sm"></span>
-                                    <span className="w-3 h-6 bg-white rounded-sm"></span>
-                                </div>
+        <>
+            {/* Back Button */}
+            <div className={`mx-4 py-5 lg:mx-20 lg:py-10 ${theme === "dark" ? "bg-[#1F1F21]" : "bg-white"}`}>
+                <button
+                    onClick={() => navigate(-1)}
+                    className={`cursor-pointer rounded-full p-2 transition duration-300 active:scale-95 ${theme === "dark" ? "bg-[#1F1F21] text-slate-200 hover:bg-[#2A2A2D]" : "bg-gray-100 text-gray-800 hover:bg-gray-200"}`}
+                >
+                    <IoMdArrowBack size={22} />
+                </button>
+            </div>
+
+            {/* SignIn Section */}
+            <div className={`flex min-h-[72vh] items-center justify-center px-4 ${theme === "dark" ? "bg-[#1F1F21]" : "bg-white"}`}>
+
+                <div className={`w-full max-w-[520px] rounded-md border px-10 py-10 shadow-md transition duration-300 hover:shadow-lg ${theme === "dark"
+                    ? "border-[#3A3A3D] bg-[#1F1F21] hover:border-[#545458] hover:bg-[#2A2A2D]" : "border-gray-100 bg-white hover:bg-gray-50"}`}>
+
+                    {/* Logo */}
+                    <div className="flex justify-center items-center gap-3 mb-8">
+                        <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center">
+                            <div className="flex gap-1">
+                                <span className="w-3 h-6 bg-white rounded-sm"></span>
+                                <span className="w-3 h-6 bg-white rounded-sm"></span>
                             </div>
-    
-                            <h1 className="text-5xl font-semibold text-[#172B4D]"> Taskify </h1>
                         </div>
-    
-    
-                        <h2 className="text-center text-xl font-semibold text-[#172B4D] mb-8">Sign in to continue</h2>
-    
-                        <button onClick={googleSignin} className="w-full h-12 active:scale-[0.98] border border-gray-300 rounded-md flex items-center justify-center gap-3
-                           text-[#172B4D] font-semibold hover:bg-gray-50 transition duration-200 cursor-pointer" >
-                            <FcGoogle className="text-2xl" /> Sign in with Google
-                        </button>
-    
-                        <div className="flex items-center gap-3 my-7">
-                            <div className="flex-1 h-px bg-gray-300"></div>
-                            <span className="text-sm text-gray-500"> OR </span>
-                            <div className="flex-1 h-px bg-gray-300"></div>
-                        </div>
-    
-                        {/* Sign In */}
-                        <p className="text-center text-sm text-gray-600">
-                            Don't have an account? {"  "}
-                            <button onClick={() => navigate("/signup")} className="text-[#2563EB] font-semibold hover:underline cursor-pointer" >
-                                Sign up
-                            </button>
-                        </p>
-    
+
+                        <h1 className={`text-5xl font-semibold ${theme === "dark" ? "text-white" : "text-[#172B4D]"}`}>
+                            Taskify
+                        </h1>
                     </div>
+
+                    <h2 className={`mb-8 text-center text-xl font-semibold ${theme === "dark" ? "text-slate-200" : "text-[#172B4D]"}`}>
+                        Sign in to continue
+                    </h2>
+
+                    <button
+                        onClick={googleSignin}
+                        className={`flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-md border font-semibold transition duration-200 active:scale-[0.98] ${theme === "dark" 
+                            ? "border-[#3A3A3D] bg-[#1F1F21] text-slate-200 hover:border-[#545458] hover:bg-[#2A2A2D]" 
+                            : "border-gray-300 bg-white text-[#172B4D] hover:bg-gray-50"}`}
+                    >
+                        <FcGoogle className="text-2xl" /> Sign in with Google
+                    </button>
+
+                    <div className="flex items-center gap-3 my-7">
+                        <div className={`flex-1 h-px ${theme === 'dark' ? 'bg-slate-600' : 'bg-gray-300'}`}></div>
+                        <span className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>OR</span>
+                        <div className={`flex-1 h-px ${theme === 'dark' ? 'bg-slate-600' : 'bg-gray-300'}`}></div>
+                    </div>
+
+                    {/* Sign Up link */}
+                    <p className={`text-center text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                        Don't have an account?{"  "}
+                        <button
+                            onClick={() => navigate("/signup")}
+                            className="text-[#2563EB] font-semibold hover:underline cursor-pointer"
+                        >
+                            Sign up
+                        </button>
+                    </p>
+
                 </div>
-            </>
-        )
+            </div>
+        </>
+    )
 }
 
 export default SignIn

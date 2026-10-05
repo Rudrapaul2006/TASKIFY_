@@ -6,7 +6,7 @@ clodinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-export let uploadimage = async (file) => {
+export let uploadImageOnCloudinary = async (file) => {
     try {
         if (!file) {
             throw new Error("No file provided")

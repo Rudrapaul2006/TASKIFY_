@@ -4,11 +4,14 @@ import './index.css'
 import App from './App.jsx'
 import { store } from './Redux_Store/store.js'
 import { BrowserRouter } from 'react-router-dom'
+import ThemeProvider from './Components/ThemeProvider'
 
 createRoot(document.getElementById('root')).render(
     <BrowserRouter>
         <Provider store={store}>
-            <App />
+            <ThemeProvider>
+                <App />
+            </ThemeProvider>
         </Provider>
     </BrowserRouter>
 
