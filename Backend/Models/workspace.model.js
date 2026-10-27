@@ -8,12 +8,18 @@ let userRef = {
     required: true
 }
 
+let optionalUserRef = {
+    type: Schema.Types.ObjectId,
+    ref: 'user',
+    default: null
+}
+
 // Workspace :
 let workspaceSchema = new Schema({
     name: { type: String, required: true, trim: true },
     logo: { type: String },
     workspaceOwner: userRef, // The user who create workspace [access the workspace]
-    
+
     findCode: {
         type: String,
         unique: true,
@@ -39,7 +45,7 @@ let workspaceMembershipSchema = new Schema({
     user: userRef,
     role: {
         type: String,
-        enum: ['workspace_owner', 'workspace_member', 'organization_creator'],
+        enum: ['workspace_owner', 'workspace_member'],
         default: 'workspace_member'
     },
     workspace: {
@@ -59,9 +65,9 @@ export let workspaceMemberShip = model('workspaceMembership', workspaceMembershi
 
 // Invitation in workspace : (admin can send invitation to user)
 let workspaceInvitationSchema = new Schema({
-    invitedEmail: { type: String, trim: true, required: true },
+    invitedEmail: { type: String, trim: true, required: true, lowercase: true },
+    invitedUser: userRef,
     invitedBy: userRef,
-    invitedFrom: { type: String, trim: true, required: true }, // who invite a user in workspace ['workspace_owner' only]
 
     workspace: {
         type: Schema.Types.ObjectId,
@@ -70,11 +76,33 @@ let workspaceInvitationSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'accepted', 'decline'],
+        enum: ['pending', 'accepted', 'declined', 'expired', 'cancelled'],
         default: 'pending',
-        // required: true
+    },
+
+    respondedBy: optionalUserRef, //user who respond this invitation or null
+    respondedAt: {
+        type: Date,
+        default: null
+    },
+
+    invitationToken: {
+        type: String
+    },
+
+    expiresAt: {
+        type: Date,
+        default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days expiry by default
     }
 }, { timestamps: true })
+
+workspaceInvitationSchema.index(
+    { workspace: 1, invitedEmail: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { status: 'pending' }
+    }
+)
 
 export let workspaceInvitation = model("workspaceInvitation", workspaceInvitationSchema)
 
@@ -90,15 +118,28 @@ let joiningRequestInWorkspaceSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'accepted', 'decline'],
+        enum: ['pending', 'accepted', 'declined', 'expired', 'cancelled'],
         default: 'pending',
-        // required: true
     },
 
-    respondedBy: {
-        type: Schema.Types.ObjectId,
-        ref: 'user'
-    } //workspace owner
+    respondedBy: optionalUserRef, //owner
+    respondedAt: {
+        type: Date,
+        default: null
+    },
+
+    expiresAt: {
+        type: Date,
+        default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days expiry by default
+    }
 }, { timestamps: true })
+
+joiningRequestInWorkspaceSchema.index(
+    { workspace: 1, user: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { status: 'pending' }
+    }
+)
 
 export let workspaceJoinRequest = model("workspaceJoinRequest", joiningRequestInWorkspaceSchema)

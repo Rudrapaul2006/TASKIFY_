@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { FcGoogle } from "react-icons/fc";
 import { IoMdArrowBack } from "react-icons/io";
@@ -5,15 +6,22 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser, setUserLoading } from "../Redux_Store/userSlice";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { app } from "../Firebase/Firebase";
 
 const SignIn = () => {
     let navigate = useNavigate();
     let dispatch = useDispatch();
-    let { theme } = useSelector(state => state.theme)
+    let { theme } = useSelector(state => state.theme);
+    let { user, userLoading } = useSelector(state => state.user);
 
-    //Google login :
+    useEffect(() => {
+        if (!userLoading && user) {
+            navigate("/authenticatedhome", { replace: true });
+        }
+    }, [user, userLoading, navigate]);
+
+    // Google login
     let googleSignin = async () => {
         try {
             dispatch(setUserLoading(true))
@@ -22,20 +30,34 @@ const SignIn = () => {
             let auth = getAuth(app)
 
             let googleData = await signInWithPopup(auth, provider)
+            let googleEmail = googleData?.user?.email?.toLowerCase()?.trim()
 
-            let res = await axios.post(`${import.meta.env.VITE_user_endpoint}/login`, { email: googleData.user.email }, { withCredentials: true })
+            let res = await axios.post(`${import.meta.env.VITE_user_endpoint}/login`, { email: googleEmail }, { withCredentials: true })
+
             if (res.data.success) {
+                dispatch(setUser(res.data.user));
                 toast.success(res.data.message || `Login Successful`)
-                dispatch(setUser(res.data.user))
-                navigate("/authenticatedhome")
+                navigate("/authenticatedhome", { replace: true })
             }
 
         } catch (error) {
-            console.log(error)
-            toast.error(error?.response?.data?.message || "Something went wrong")
+            console.log("Login error:", error);
+            toast.error(error?.response?.data?.message || "Something went wrong during sign in")
         } finally {
             dispatch(setUserLoading(false))
         }
+    }
+
+    if (userLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Toaster position="top-center" />
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-600 text-sm font-medium">Loading...</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -52,13 +74,12 @@ const SignIn = () => {
 
             {/* SignIn Section */}
             <div className={`flex min-h-[72vh] items-center justify-center px-4 ${theme === "dark" ? "bg-[#1F1F21]" : "bg-white"}`}>
-
                 <div className={`w-full max-w-[520px] rounded-md border px-10 py-10 shadow-md transition duration-300 hover:shadow-lg ${theme === "dark"
                     ? "border-[#3A3A3D] bg-[#1F1F21] hover:border-[#545458] hover:bg-[#2A2A2D]" : "border-gray-100 bg-white hover:bg-gray-50"}`}>
 
                     {/* Logo */}
                     <div className="flex justify-center items-center gap-3 mb-8">
-                        <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20">
                             <div className="flex gap-1">
                                 <span className="w-3 h-6 bg-white rounded-sm"></span>
                                 <span className="w-3 h-6 bg-white rounded-sm"></span>
@@ -76,8 +97,8 @@ const SignIn = () => {
 
                     <button
                         onClick={googleSignin}
-                        className={`flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-md border font-semibold transition duration-200 active:scale-[0.98] ${theme === "dark" 
-                            ? "border-[#3A3A3D] bg-[#1F1F21] text-slate-200 hover:border-[#545458] hover:bg-[#2A2A2D]" 
+                        className={`flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-md border font-semibold transition duration-200 active:scale-[0.98] ${theme === "dark"
+                            ? "border-[#3A3A3D] bg-[#1F1F21] text-slate-200 hover:border-[#545458] hover:bg-[#2A2A2D]"
                             : "border-gray-300 bg-white text-[#172B4D] hover:bg-gray-50"}`}
                     >
                         <FcGoogle className="text-2xl" /> Sign in with Google
@@ -103,7 +124,7 @@ const SignIn = () => {
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
 
-export default SignIn
+export default SignIn;

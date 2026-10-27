@@ -12,12 +12,12 @@ let userSchema = new mongoose.Schema({
         trim: true
     },
     avatar: {
-        type: String,
+        type: String
     },
-    
-    socketId: {
-        type: String,
+    coverAvatar: {
+        type: String
     },
+
     online: {
         type: Boolean,
         default: false

@@ -1,19 +1,27 @@
+import { useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { IoMdArrowBack } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch, useSelector } from "react-redux";
 import { app } from "../Firebase/Firebase";
-import axios from 'axios'
-import toast from 'react-hot-toast'
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 import { setUser, setUserLoading } from "../Redux_Store/userSlice";
 
 const SignUp = () => {
     let navigate = useNavigate()
     let dispatch = useDispatch()
-    let { theme } = useSelector(state => state.theme)
+    let { theme } = useSelector((state) => state.theme)
+    let { user, userLoading } = useSelector((state) => state.user)
 
-    //Google SignUp :
+    useEffect(() => {
+        if (!userLoading && user) {
+            navigate("/authenticatedhome", { replace: true })
+        }
+    }, [user, userLoading, navigate])
+
+    // Google signup
     let googleSignUp = async () => {
         try {
             dispatch(setUserLoading(true))
@@ -22,21 +30,48 @@ const SignUp = () => {
             let auth = getAuth(app)
 
             let googleData = await signInWithPopup(auth, provider)
+            let googleEmail = googleData?.user?.email?.toLowerCase()?.trim()
 
-            let res = await axios.post(`${import.meta.env.VITE_user_endpoint}/register`, { email: googleData.user.email, name: googleData.user.displayName, avatar: googleData.user.photoURL }, { withCredentials: true })
+            let res = await axios.post(
+                `${import.meta.env.VITE_user_endpoint}/register`,
+                {
+                    email: googleEmail,
+                    name: googleData?.user?.displayName,
+                    avatar: googleData?.user?.photoURL
+                },
+                { withCredentials: true }
+            )
+
             if (res.data.success) {
-                toast.success(res.data.message || `Registration Successful`)
+                toast.success(res.data.message || "Registration Successful")
                 dispatch(setUser(res.data.user))
-                navigate("/authenticatedhome")
+                navigate("/authenticatedhome", { replace: true })
             }
-
         } catch (error) {
-            console.log(error)
-            toast.error(error?.response?.data?.message || "Something went wrong")
+            console.error("Registration error", error)
+
+            if (error?.response?.data?.message?.toLowerCase()?.includes("already exists")) {
+                toast("Account already exists. Please sign in.")
+                navigate("/signin", { replace: true })
+            } else {
+                toast.error(error?.response?.data?.message || "Something went wrong during sign up")
+            }
         } finally {
             dispatch(setUserLoading(false))
         }
     }
+
+    if (userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Toaster position="top-center" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600 text-sm font-medium">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
     return (
         <>
@@ -52,12 +87,15 @@ const SignUp = () => {
 
             {/* Signup Section */}
             <div className={`flex min-h-[72vh] items-center justify-center px-4 ${theme === "dark" ? "bg-[#1F1F21]" : "bg-white"}`}>
-                <div className={`w-full max-w-[520px] rounded-md border px-10 py-10 shadow-md transition duration-300 hover:shadow-lg ${theme === "dark"
-                    ? "border-[#3A3A3D] bg-[#1F1F21] hover:border-[#545458] hover:bg-[#2A2A2D]" : "border-gray-100 bg-white hover:bg-gray-50"}`}>
-
+                <div
+                    className={`w-full max-w-[520px] rounded-md border px-10 py-10 shadow-md transition duration-300 hover:shadow-lg ${theme === "dark"
+                        ? "border-[#3A3A3D] bg-[#1F1F21] hover:border-[#545458] hover:bg-[#2A2A2D]"
+                        : "border-gray-100 bg-white hover:bg-gray-50"
+                        }`}
+                >
                     {/* Logo */}
-                    <div className="flex justify-center items-center gap-3 mb-8">
-                        <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center">
+                    <div className="flex justify-center items-center gap-3 mb-6">
+                        <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20">
                             <div className="flex gap-1">
                                 <span className="w-3 h-6 bg-white rounded-sm"></span>
                                 <span className="w-3 h-6 bg-white rounded-sm"></span>
@@ -69,7 +107,6 @@ const SignUp = () => {
                         </h1>
                     </div>
 
-
                     <h2 className={`mb-8 text-center text-xl font-semibold ${theme === "dark" ? "text-slate-200" : "text-[#172B4D]"}`}>
                         Sign up to continue
                     </h2>
@@ -78,19 +115,20 @@ const SignUp = () => {
                         onClick={googleSignUp}
                         className={`flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-md border font-semibold transition duration-200 active:scale-[0.98] ${theme === "dark"
                             ? "border-[#3A3A3D] bg-[#1F1F21] text-slate-200 hover:border-[#545458] hover:bg-[#2A2A2D]"
-                            : "border-gray-300 bg-white text-[#172B4D] hover:bg-gray-50"}`}
+                            : "border-gray-300 bg-white text-[#172B4D] hover:bg-gray-50"
+                            }`}
                     >
                         <FcGoogle className="text-2xl" /> Sign up with Google
                     </button>
 
                     <div className="flex items-center gap-3 my-7">
-                        <div className={`flex-1 h-px ${theme === 'dark' ? 'bg-slate-600' : 'bg-gray-300'}`}></div>
-                        <span className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>OR</span>
-                        <div className={`flex-1 h-px ${theme === 'dark' ? 'bg-slate-600' : 'bg-gray-300'}`}></div>
+                        <div className={`flex-1 h-px ${theme === "dark" ? "bg-slate-600" : "bg-gray-300"}`}></div>
+                        <span className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>OR</span>
+                        <div className={`flex-1 h-px ${theme === "dark" ? "bg-slate-600" : "bg-gray-300"}`}></div>
                     </div>
 
                     {/* Sign In link */}
-                    <p className={`text-center text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                    <p className={`text-center text-sm ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}>
                         Have an account?{" "}
                         <button
                             onClick={() => navigate("/signin")}
@@ -99,7 +137,6 @@ const SignUp = () => {
                             Sign in
                         </button>
                     </p>
-
                 </div>
             </div>
         </>

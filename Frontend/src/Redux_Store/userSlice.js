@@ -6,7 +6,7 @@ let userSlice = createSlice({
     initialState: {
         user: null,
         isAuthenticated: false,
-        userLoading: false
+        userLoading: true
     },
     reducers: {
         setUser: (state, action) => {
@@ -15,9 +15,14 @@ let userSlice = createSlice({
         },
         setUserLoading: (state, action) => {
             state.userLoading = action.payload;
+        },
+
+        // update user :
+        setUpdateUser: (state, action) => {
+            state.user = { ...state.user, ...action.payload }
         }
     }
 })
 
-export let { setUser, setUserLoading } = userSlice.actions
+export let { setUser, setUserLoading, setUpdateUser } = userSlice.actions
 export default userSlice.reducer

@@ -5,11 +5,14 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 import UserRouter from './Routes/user.route.js'
 import { DBConnection } from './Utils/ConnectDB.js'
 import { connectIo } from './Utils/Socket.js'
 import WorkspaceRouter from './Routes/workspace.route.js'
+import OrganizationRouter from './Routes/organization.route.js'
 import { redisClient } from './Utils/RedisClint.js'
 
 
@@ -39,9 +42,14 @@ app.get('/', (req, res) => {
     res.send("Taskify Backend")
 })
 
+// app.use('/uploads', express.static('uploads'))
+let __dirname = path.dirname(fileURLToPath(import.meta.url))
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
 // userRoute's
 app.use('/api/user', UserRouter)
 app.use('/api/workspace', WorkspaceRouter)
+app.use('/api/organization', OrganizationRouter)
 
 app.use((req, res) => {
     return res.status(404).json({

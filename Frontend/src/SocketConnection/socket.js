@@ -16,6 +16,7 @@ export let connectSocket = (userId) => {
 
     return socket
 }
+
 export let getSocket = () => socket
 
 export let disconnectSocket = () => {

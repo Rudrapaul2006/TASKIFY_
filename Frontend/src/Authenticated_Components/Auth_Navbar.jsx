@@ -10,6 +10,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { setUser } from '@/Redux_Store/userSlice';
 import { toggleTheme } from '@/Redux_Store/themeSlice';
+import { setWorkspace } from '@/Redux_Store/workspaceSlice';
 
 const Auth_Navbar = () => {
     let navigate = useNavigate()
@@ -21,6 +22,7 @@ const Auth_Navbar = () => {
 
     let [active, setActive] = useState(false)
     let [lgactive, setLgActive] = useState(false)
+    let firstWord = user?.name?.trim().split(/\s+/)[0] || "?"
 
     //Logout api 
     let userLogOut = async () => {
@@ -29,6 +31,10 @@ const Auth_Navbar = () => {
             if (res.data.success) {
                 toast.success(res.data.message)
                 dispatch(setUser(null))
+                dispatch(setWorkspace([]))
+                if (typeof window !== "undefined") {
+                    window.localStorage.removeItem("selectedWorkspaceId")
+                }
                 navigate("/")
             }
         } catch (error) {
@@ -41,9 +47,9 @@ const Auth_Navbar = () => {
     return (
         <div className='sticky top-0 z-[999]'>
             <div
-                className={`border shadow-sm duration-300 ${theme === 'dark'
-                    ? 'bg-[#1F1F21] text-slate-100 hover:bg-[#242427] hover:shadow-lg border border-[#3A3A3D] hover:border-[#545458]'
-                    : 'border-slate-200 bg-white text-slate-900 hover:bg-slate-50 hover:border-slate-300 hover:shadow-lg'}`}
+                className={`${theme === 'dark'
+                    ? 'border-b border-[#2E2E31] bg-[#1F1F21]/95 text-slate-100 shadow-[0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md transition-colors duration-300'
+                    : 'border-b border-slate-200/80 bg-white/90 text-slate-900 shadow-[0_1px_0_rgba(15,23,42,0.06)] backdrop-blur-md transition-colors duration-300'}`}
             >
                 <div className='mx-2 lg:mx-20 px-2 h-18 flex flex-row items-center justify-between'>
 
@@ -71,7 +77,7 @@ const Auth_Navbar = () => {
                         <Popover onOpenChange={(open) => setActive(open)}>
                             <PopoverTrigger asChild>
                                 <button
-                                    className={`flex h-8 w-10 items-center justify-center rounded-md duration-300 ${active ? theme === "dark" ? "bg-emerald-500/25 text-emerald-300" : "bg-green-200 text-green-700" : theme === "dark" 
+                                    className={`flex h-8 w-10 items-center justify-center rounded-md duration-300 ${active ? theme === "dark" ? "bg-emerald-500/25 text-emerald-300" : "bg-green-200 text-green-700" : theme === "dark"
                                         ? "text-slate-200 hover:bg-[#2A2A2D]" : "text-slate-700 hover:bg-gray-200"}`}
                                 >
                                     <TbDotsFilled size={20} />
@@ -95,8 +101,8 @@ const Auth_Navbar = () => {
                                 </div>
 
                                 <div className={`border-t p-2 ${theme === "dark" ? "border-slate-700" : "border-gray-200"}`}>
-                                    <button className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[15px] ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
-                                        <CgProfile size={20} /> <span>Profile</span>
+                                    <button onClick={() => navigate('/user_profile')} className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[15px] ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
+                                        <CgProfile size={20} /> <span className="cursor-pointer">Profile</span>
                                     </button>
 
                                     <button onClick={userLogOut} className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[15px] ${theme === "dark" ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}>
@@ -125,8 +131,17 @@ const Auth_Navbar = () => {
                                         : "border border-blue-400 bg-blue-200 text-blue-700" : theme === "dark" ? "border border-transparent text-slate-200 hover:border-[#545458] hover:bg-[#2A2A2D]"
                                         : "border border-transparent text-slate-700 hover:border-gray-300 hover:bg-gray-200"}`}
                                 >
-                                    {user?.avatar ? <img src={user.avatar} alt="Profile" className="h-10 w-10 rounded-full object-cover" /> :
-                                        <User className={`h-10 w-10 rounded-full p-2 ${theme === "dark" ? "bg-emerald-500/20 text-emerald-300" : "bg-green-50 text-green-700"}`} />}
+                                    <div className={`relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full p-2 text-sm font-semibold ${theme === "dark" ? "bg-emerald-500/20 text-emerald-300" : "bg-green-50 text-green-700"}`}>
+                                        {user?.name?.trim().split(/\s+/).filter(Boolean).map((part, index, parts) => index === 0 || index === parts.length - 1 ? part[0] : null).filter(Boolean).join('').toUpperCase() || "?"}
+                                        {user?.avatar && (
+                                            <img
+                                                src={user?.avatar}
+                                                alt="Profile"
+                                                onError={(event) => { event.currentTarget.style.display = "none"; }}
+                                                className="absolute inset-0 h-full w-full rounded-full object-cover"
+                                            />
+                                        )}
+                                    </div>
                                 </div>
                             </PopoverTrigger>
 
@@ -147,8 +162,8 @@ const Auth_Navbar = () => {
                                 </div>
 
                                 <div className="p-2">
-                                    <button className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
-                                        <CgProfile size={21} /> <span className="text-[15px]">Profile</span>
+                                    <button onClick={() => navigate('/user_profile')} className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
+                                        <CgProfile size={21} /> <span className="text-[15px] cursor-pointer">Profile</span>
                                     </button>
 
                                     <button onClick={userLogOut} className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-red-500 ${theme === "dark" ? "hover:bg-red-500/10" : "hover:bg-red-50"}`}>
