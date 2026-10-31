@@ -138,11 +138,11 @@ const Sidebar = () => {
 
 
     return (
-        <div className={`relative h-full shrink-0 transition-all duration-300 ${isOpen ? "w-35 sm:w-60 lg:w-[260px]" : "w-[35px]"}`} >
+        <div className={`relative z-[60] h-full shrink-0 transition-all duration-300 ${isOpen ? "w-35 sm:w-60 lg:w-[260px]" : "w-[35px]"}`} >
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen((p) => !p)}
-                className={`absolute right-0 top-12 z-20 flex h-6 w-6 translate-x-1/2 items-center justify-center rounded-full border shadow-md transition-all duration-300 cursor-pointer
+                className={`absolute right-0 top-12 z-[60] flex h-6 w-6 translate-x-1/2 items-center justify-center rounded-full border shadow-md transition-all duration-300 cursor-pointer
                     ${dark ? "border-[#3A3A3D] bg-[#2A2A2D] text-slate-100 hover:bg-[#3A3A3D]" : "border-[#E5E7EB] bg-white text-slate-700 hover:bg-gray-100"}`}
             >
                 {isOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}

@@ -9,6 +9,7 @@ import SignIn from "./Authentication/SignIn";
 import SignUp from "./Authentication/SignUp";
 import useConnectWithSocket from "./SocketConnection/connectWithSocket";
 import UserProfile from "./Authenticated_Pages/UserProfile";
+import Members_Profile from "./Authenticated_Pages/Members_Profile";
 
 const App = () => {
   // Get logged in user  
@@ -51,7 +52,7 @@ const App = () => {
         <Route path={`/workspace/home/:id`} element={user ? <AuthenticatedHome /> : <Navigate to="/" replace />} />
         <Route path={`/workspace/activity/:id`} element={user ? <AuthenticatedHome /> : <Navigate to="/" replace />} />
         <Route path={`/workspace/members/:id`} element={user ? <AuthenticatedHome /> : <Navigate to="/" replace />} />
-        
+        <Route path={`/workspace/member_profile/:workspaceid/:userid`} element={user ? <Members_Profile /> : <Navigate to="/" replace />} />
 
         {/* Catch-all fallback */}
         <Route path="*" element={<Navigate to={user ? "/authenticatedhome" : "/"} replace />} />

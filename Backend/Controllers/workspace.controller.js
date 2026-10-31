@@ -753,7 +753,13 @@ export let invitation_activity_and_history = async (req, res) => {
             return res.status(400).json({ message: "Please provide a valid user", success: false })
         }
 
-        let { type } = req.query
+        let { type, search, sort } = req.query
+        search = search.toString().trim() || ''
+        sort = sort?.toString().trim() || ''
+
+        // sort = dmc = decending most cancelled
+        // sort = dme = decending most expired
+
         let allowedTypes = ['cancelled', 'expired', 'declined']
         if (type && !allowedTypes.includes(type)) {
             return res.status(400).json({
@@ -768,7 +774,7 @@ export let invitation_activity_and_history = async (req, res) => {
         }
 
         let owner_workspace_membership = await workspaceMemberShip.findOne({
-            user: owner._id,
+            user: owner?._id,
             workspace: workspace_id,
             role: 'workspace_owner'
         })
@@ -786,7 +792,7 @@ export let invitation_activity_and_history = async (req, res) => {
             {
                 $match: {
                     workspace: new mongoose.Types.ObjectId(workspace_id),
-                    invitedBy: new mongoose.Types.ObjectId(owner._id)
+                    invitedBy: new mongoose.Types.ObjectId(owner?._id)
                 }
             },
             { $sort: { updatedAt: -1 } },
@@ -803,7 +809,9 @@ export let invitation_activity_and_history = async (req, res) => {
                         $push: { _id: "$_id", status: "$status", createdAt: "$createdAt", updatedAt: "$updatedAt" }
                     }
                 }
-            }
+            },
+            // Hide emails whose latest invitation is pending or accepted
+            { $match: { "invitations.0.status": { $nin: ['pending', 'accepted'] } } }
         ]
 
         if (type) {
@@ -850,7 +858,7 @@ export let invitation_activity_and_history = async (req, res) => {
         console.log(error)
         return res.status(500).json({ message: "server error in get invitation history api", success: false })
     }
-} 
+}
 
 
 // Owner re-send invitation to user : [post request] : [owner route]
@@ -948,7 +956,7 @@ export let resend_invitation_to_user = async (req, res) => {
         })
         if (user_has_pending_invitation) {
             return res.status(400).json({
-                message: 'User already hasa pending invitation',
+                message: 'User already has a pending invitation',
                 success: false
             })
         }
@@ -973,6 +981,7 @@ export let resend_invitation_to_user = async (req, res) => {
         return res.status(200).json({
             message: 'Workspace invitation resent successfully',
             invitation: populatedInvitation,
+            membership: user_membership,
             success: true
         })
 
@@ -990,6 +999,7 @@ export let resend_invitation_to_user = async (req, res) => {
         })
     }
 }
+
 
 // Cancel the invitation : [patch request] [owner route] 
 // Full route => PATCH /api/workspace/:workspaceid/cancel_invitation/:invitationId
@@ -1659,6 +1669,10 @@ export let get_your_pending_requests = async (req, res) => {
             return res.status(400).json({ message: "Please provide a valid workspace id", success: false })
         }
 
+        let { query, sort } = req.query
+        query = query?.toString().trim()
+        sort = sort?.toString().trim()
+
         let owner_Membership_in_workspace = await workspaceMemberShip.findOne({
             user: owner?._id,
             workspace: workspace_id,
@@ -1687,6 +1701,86 @@ export let get_your_pending_requests = async (req, res) => {
         console.log(error)
         return res.status(500).json({
             message: 'Server error retrieving workspace join requests',
+            success: false
+        })
+    }
+}
+
+
+// workspace owner get all type of join requesst [cancelled, expired] => [get route] [admin route]
+// Full route : ../api/workspace/type_joining_requests/:workspaceid
+// Returning => userJoinReq
+export let admin_side_type_join_request = async (req, res) => {
+    try {
+        let owner = req.user
+        if (!owner || !mongoose.Types.ObjectId.isValid(owner?._id)) {
+            return res.status(401).json({ message: 'provide a valid user', success: false })
+        }
+
+        let { search, sort } = req.query
+        sort = sort?.toString().trim() || ''
+        search = search?.toString().trim() || ''
+        
+        
+        let workspace_id = req.params.workspaceid
+        if (workspace_id === '' || !mongoose.Types.ObjectId.isValid(workspace_id) || !workspace_id) {
+            return res.status(401).json({ message: 'provide a valid workspce id', success: false })
+        }
+
+        let owner_membership = await workspaceMemberShip.findOne({ user: owner?._id, workspace: workspace_id, role: 'workspace_owner' })
+        if (!owner_membership) { return res.status(400).json({ message: 'not authorize to get data', success: false }) }
+
+        let requests = await workspaceJoinRequest.aggregate([
+            // is workspace ki saari requests
+            { $match: { workspace: new mongoose.Types.ObjectId(workspace_id) } },
+            { $sort: { updatedAt: -1 } },
+
+            // user ke hisaab se group = ek user ek row
+            {
+                $group: {
+                    _id: '$user',
+                    cancelledCount: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
+                    expiredCount: { $sum: { $cond: [{ $eq: ['$status', 'expired'] }, 1, 0] } },
+                    declinedCount: { $sum: { $cond: [{ $eq: ['$status', 'declined'] }, 1, 0] } },
+                    latest: { $first: '$$ROOT' }
+                }
+            },
+
+            // Return users whose latest request is cancelled or expired.
+            { $match: { 'latest.status': { $in: ['declined', 'expired'] } } },
+
+            // user data
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            },
+            { $unwind: '$user' },
+            {
+                $project: {
+                    _id: 0,
+                    user: { _id: '$user._id', name: '$user.name', email: '$user.email' },
+                    cancelledCount: 1,
+                    declinedCount: 1,
+                    expiredCount: 1,
+                    latest: { _id: 1, status: 1, updatedAt: 1 }
+                }
+            },
+            { $sort: { 'latest.updatedAt': -1 } }
+        ])
+
+        return res.status(200).json({
+            success: true,
+            userJoinReq: requests || []
+        })
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: 'server error in get admin side type request api',
             success: false
         })
     }
@@ -1934,8 +2028,8 @@ export let get_all_workspace_members = async (req, res) => {
 
         // search query :
         let { query, sort } = req.query
-        query = query.toString().trim() || ''
-        sort = sort.toString().trim() || ''
+        query = query?.toString().trim() || ''
+        sort = sort?.toString().trim() || ''
 
 
         let workspace_id = req.params.workspaceid
@@ -1948,7 +2042,7 @@ export let get_all_workspace_members = async (req, res) => {
 
         let requesterMembership = await workspaceMemberShip.findOne({
             workspace: workspace_id,
-            user: user._id
+            user: user?._id
         })
         if (!requesterMembership) {
             return res.status(403).json({

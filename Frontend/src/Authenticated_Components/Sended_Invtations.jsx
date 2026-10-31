@@ -1,7 +1,7 @@
-﻿import axios from 'axios'
+﻿﻿import axios from 'axios'
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { X } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { useDispatch, useSelector } from 'react-redux'
 import { get_invitation } from '@/Workspace_Hooks/get_all_invitations'
 import toast from 'react-hot-toast'
@@ -10,18 +10,13 @@ import {
   set_workspace_invitations_loading
 } from '@/Redux_Store/workspaceSlice'
 import Invitation_History from './Invitations_History'
+import get_all_members from '@/Workspace_Hooks/get_all_members'
 
 const Sended_Invtations = () => {
   let dispatch = useDispatch()
   let navigate = useNavigate()
   let params = useParams()
   let workspace_id = params.id
-
-  // Get Workspace Invitations [hook]
-  get_invitation(workspace_id)
-
-  let tabStorageKey = `workspaceMembersTab:${workspace_id}`
-  let active_tab = localStorage.getItem(tabStorageKey) || 'invitation'
 
   let { workspace, workspace_invitations, workspace_invitations_loading, pending_invitation_search, pending_invitation_sorting } = useSelector(state => state.workspace)
   let { theme } = useSelector(state => state.theme)
@@ -33,6 +28,11 @@ const Sended_Invtations = () => {
 
   // History flash on url :
   let [activeInvitationActivity, setInvitationActivity] = useState('')
+  
+  // Get Workspace Invitations [hook]
+  get_invitation(workspace_id, activeInvitationActivity)
+  get_all_members(workspace_id, 'invitation')
+
   useEffect(() => {
     if (!activeInvitationActivity) return
     navigate(`/workspace/members/${workspace_id}?active_tab=invitation&${activeInvitationActivity}`)
@@ -69,93 +69,103 @@ const Sended_Invtations = () => {
   }, [pending_invitation_search, dispatch, pending_invitation_sorting, navigate, workspace_id])
 
 
-  let chipBase = "w-full cursor-pointer rounded-xl border px-4 py-1.5 text-sm font-medium transition-all duration-200 sm:w-auto"
+  let chipBase = "cursor-pointer rounded-xl border px-4 py-1 text-sm font-medium transition-all duration-200 shrink-0 inline-flex items-center justify-center"
   let chipInactive = theme === "dark" ? "border-slate-500 text-slate-300 hover:bg-slate-500/20 hover:border-slate-400" : "border-slate-400 text-slate-600 hover:bg-slate-100 hover:border-slate-600"
-  let chipActive = "border-blue-500 text-blue-500 bg-blue-500/20"
+
 
 
   return (
-    <div className="mt-5 w-full">
+    <div className="w-full">
 
-      {/* invitation activity button */}
-      {isOwner && (
-        <div className="mb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 lg:gap-4">
+      {!activeInvitationActivity && (
+        <div className={`sticky top-[107.5px] sm:top-[115px] z-[40] pt-2.5 pb-2 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 ${theme === "dark" ? "bg-[#1a1a1b]" : "bg-gray-50"}`}>
 
-          <button
-            onClick={() => setInvitationActivity('invitationActivity')}
-            className={`${chipBase} ${activeInvitationActivity === 'invitationActivity' ? chipActive : chipInactive}`}
-          >
-            Activity
-          </button>
+          {/* Activity & Clear buttons */}
+          {isOwner && (
+            <div className="mb-2.5 flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setInvitationActivity('invitationActivity')}
+                className={`${chipBase} ${chipInactive}`}
+              >
+                Activity
+              </button>
 
-          {activeInvitationActivity && <button
-            onClick={() => {
-              setInvitationActivity('')
-              dispatch(set_workspace_invitations_loading(true))
-              setTimeout(() => dispatch(set_workspace_invitations_loading(false)), 300)
-              dispatch(set_pending_invitation_search(''))
-              dispatch(set_pending_invitation_sorting(''))
-              navigate(`/workspace/members/${workspace_id}?active_tab=invitation`)
-            }}
-            className={`${chipBase} inline-flex items-center justify-center gap-2 border-red-500 text-red-500 hover:border-red-400 hover:bg-red-500/10`}
-          >
-            <X className="mt-0.5" size={16} aria-hidden="true" />
-            Clear
-          </button>
-          }
+              {activeInvitationActivity &&
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch(set_pending_invitation_search(''))
+                    dispatch(set_pending_invitation_sorting(''))
+                    setInvitationActivity('')
+                    navigate(`/workspace/members/${workspace_id}?active_tab=invitation`, { replace: true })
+                  }}
+                  className={`${chipBase} gap-2 border-red-500 text-red-500 hover:border-red-400 hover:bg-red-500/10`}
+                >
+                  <X className="mt-0.5" size={16} aria-hidden="true" />
+                  Clear
+                </button>}
+            </div>
+          )}
+
+          <hr className={`mb-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+
+          {/* searching and sorting */}
+          {(isOwner || isMember) && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:justify-start">
+
+              <div className="relative w-full lg:max-w-80 lg:flex-none">
+                <Search size={17}
+                  className={`pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`} />
+
+                <input
+                  type="text"
+                  value={pending_invitation_search}
+                  onChange={(e) => {
+                    dispatch(set_pending_invitation_search(e.target.value))
+                    dispatch(set_pending_invitation_sorting(''))
+                  }}
+                  placeholder="Search name or email"
+                  className={`h-10 w-full rounded-xl border pr-3 pl-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 
+                    ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                />
+              </div>
+
+              <div className="w-full sm:w-auto">
+                <select
+                  value={pending_invitation_sorting}
+                  onChange={(e) => {
+                    dispatch(set_pending_invitation_sorting(e.target.value))
+                    dispatch(set_pending_invitation_search(''))
+                  }}
+                  className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`}
+                >
+                  <option value="">Sort</option>
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                </select>
+              </div>
+              
+            </div>
+          )}
+
+          <hr className={`mt-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
         </div>
       )}
-
-
-      {!activeInvitationActivity && <hr className={`mb-3 border-1 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />}
-
-
-      {/* search and sorting */}
-      {(isOwner || isMember) && !activeInvitationActivity && (
-        <div className="mt-5 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <input
-            value={pending_invitation_search}
-            onChange={(e) => {
-              dispatch(set_pending_invitation_search(e.target.value))
-              dispatch(set_pending_invitation_sorting(''))
-            }}
-            className={`h-10 w-full min-w-0 rounded-xl border px-3 outline-none focus:ring focus:ring-blue-500 sm:max-w-80 sm:flex-1 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
-            type="text"
-            placeholder="Search invitations..."
-          />
-
-          <div className="w-full sm:w-auto">
-            <select
-              value={pending_invitation_sorting}
-              onChange={(e) => {
-                dispatch(set_pending_invitation_sorting(e.target.value)),
-                  dispatch(set_pending_invitation_search(''))
-              }}
-              className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`}
-            >
-              <option defaultChecked value="">Sort</option>
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-            </select>
-          </div>
-        </div>
-      )}
-
-
-      <hr className={`border-1 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
 
 
       {/* history of invitation page */}
-      {activeInvitationActivity && <Invitation_History />}
+      {activeInvitationActivity && <Invitation_History onClear={() => setInvitationActivity('')} />}
 
 
-      {/* Default invitations list [pending invitations] */}
       {!activeInvitationActivity && (
         workspace_invitations_loading ? (
+
           <div className="flex justify-center py-14" role="status" aria-label="Loading invitations">
             <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
           </div>
+
         ) : workspace_invitations.length > 0 ? workspace_invitations?.map((i) => (
+
           <div key={i?._id || i?.id}>
             <div
               className={`flex flex-col justify-between gap-4 border-b px-2 py-4 last:border-b-0 sm:flex-row sm:items-center sm:px-1 
@@ -205,12 +215,16 @@ const Sended_Invtations = () => {
 
             <hr className={`border-0 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
           </div>
+
         )) : (
+
           <div className={`py-15 text-center text-[14.5px] ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>
             No invitations sent yet
           </div>
+
         )
       )}
+
     </div>
   )
 }

@@ -3,16 +3,18 @@ import axios from 'axios'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-export const get_invitation = (workspace_id) => {
+export const get_invitation = (workspace_id, activity) => {
 
     let dispatch = useDispatch()
-    let {pending_invitation_search, pending_invitation_sorting} = useSelector(state => state.workspace)
+    let { pending_invitation_search, pending_invitation_sorting } = useSelector(state => state.workspace)
 
     useEffect(() => {
         if (!workspace_id) {
             dispatch(set_workspace_invitations([]))
             return
         }
+
+        if (activity) return
 
         let get_all_invitations = async () => {
             try {
@@ -21,7 +23,7 @@ export const get_invitation = (workspace_id) => {
                 let res = await axios.get(`${import.meta.env.VITE_workspace_endpoint}/get_sended_invitations/${workspace_id}?query=${pending_invitation_search}&sort=${pending_invitation_sorting}`, { withCredentials: true })
 
                 if (res.data.success) {
-                    dispatch(set_workspace_invitations(res.data.invitation))
+                    dispatch(set_workspace_invitations(res.data.invitation))    
                 } else {
                     dispatch(set_workspace_invitations([]))
                 }
@@ -34,5 +36,5 @@ export const get_invitation = (workspace_id) => {
 
         get_all_invitations()
 
-    }, [workspace_id, dispatch, pending_invitation_search, pending_invitation_sorting])
+    }, [workspace_id, dispatch, pending_invitation_search, pending_invitation_sorting, activity])
 }

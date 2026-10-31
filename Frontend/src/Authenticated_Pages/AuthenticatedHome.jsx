@@ -81,7 +81,7 @@ const AuthenticatedHome = () => {
 
 
         {/* Main Content Area */}
-        <main className={`flex-1 transition-all duration-300 ${theme === 'dark' ? 'bg-[#1a1a1b]' : 'bg-gray-50'} ${hasWorkspaces ? 'p-8' : ''} ${isMembersPage ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+        <main className={`flex-1 transition-all duration-300 overflow-y-auto ${theme === 'dark' ? 'bg-[#1a1a1b]' : 'bg-gray-50'} ${hasWorkspaces ? (isMembersPage ? 'px-4 sm:px-6 lg:px-8 pb-8 pt-0' : 'p-8') : ''}`}>
 
           {workspaceLoading && !hasFetchedWorkspaces ? (
 

@@ -1,11 +1,11 @@
 ﻿import Join_Requests from "@/Authenticated_Components/Join_Requests"
 import Sended_Invtations from "@/Authenticated_Components/Sended_Invtations"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/Components/ui/dialog"
-import { set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_workspace_member_search, set_workspace_member_sorting, setWorkspaceMembers, setWorkspaceMembersCount, setWorkspaceMembersLoading } from "@/Redux_Store/workspaceSlice"
+import { set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_workspace_member_search, set_workspace_member_sorting, setWorkspaceMembers, setWorkspaceMembersCount, setWorkspaceMembersLoading } from "@/Redux_Store/workspaceSlice"
 import get_all_members from "@/Workspace_Hooks/get_all_members"
 import { Input } from "@base-ui/react"
 import axios from "axios"
-import { Crown, LogOut, UserPlus, X } from "lucide-react"
+import { Crown, LogOut, Search, UserPlus, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { useDispatch, useSelector } from "react-redux"
@@ -57,7 +57,7 @@ const WorkspaceMembers = () => {
 
   // Get Members of each Workspace [hook]
   get_all_members(workspace_id, activeTab)
-
+  
 
   // send invitation to user :
   let [invitedEmail, setInvitedEmail] = useState('')
@@ -77,8 +77,8 @@ const WorkspaceMembers = () => {
       if (res.data.success) {
         toast.success(res.data.message || 'Invitation sent successfully')
         dispatch(set_add_invitation(res.data.invitation))
-
-        setInvitationDialogOpen(false)
+        dispatch(set_resend_workspace_invitation(res.data.invitation)) // invitation activity page me reh ke agar owner ne invite button se cancelled user ko invitation vejega to 
+        setInvitationDialogOpen(false)                                // us user ka cancel invitation activity page se clear ho jayega [active status = pending]                 
         setInvitedEmail('')
       } else {
         dispatch(set_add_invitation([]))
@@ -103,172 +103,192 @@ const WorkspaceMembers = () => {
     navigate(`/workspace/members/${workspace_id}?active_tab=${activeTab}${workspace_member_search ? '&query=' + workspace_member_search : ''}${workspace_member_sorting ? '&sort=' + workspace_member_sorting : ''}`, { replace: true })
   }, [workspace_id, workspace_member_search, workspace_member_sorting, navigate, dispatch])
 
-  let NAVBAR_HEIGHT = 69;
-
   return (
     <>
-      <div className="flex justify-between mb-10">
-        <div className="flex flex-col">
-          <span className="text-lg font-semibold">Members</span>
-          <span className={`text-md font-stretch-semi-condensed ${theme === "dark" ? 'text-slate-400' : ''}`}>{workspaceMembersCount} people is in the workspace</span>
+      <div className={`sticky top-0 z-[50] ${theme === "dark" ? "bg-[#1a1a1b]" : "bg-gray-50"} -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8`}>
+
+
+        <div className="flex justify-between items-center mt-0 lg:mt-3 pt-3 pb-5">
+          <div className="flex flex-col">
+            <span className="text-base sm:text-lg lg:text-xl font-semibold leading-tight">Members</span>
+            <span className={`text-xs lg:text-[14px] ${theme === "dark" ? 'text-slate-400' : 'text-slate-500'}`}>
+              {workspaceMembersCount} people is in the workspace
+            </span>
+          </div>
+
+          {/* Invite member (button) (owner) */}
+          {isOwner && (
+            <div>
+              <Dialog open={invitationDialogOpen} onOpenChange={(open) => { setInvitationDialogOpen(open); if (!open) setInvitedEmail("") }}>
+                <DialogTrigger>
+                  <button
+                      className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-1.5 shadow-xs transition-all duration-300 hover:shadow-sm active:scale-[0.98]
+                      ${theme === "dark" ? "border-slate-600 text-white hover:bg-[#2A2A2D] hover:border-slate-400" : "border-slate-400 text-slate-900 hover:bg-slate-100 hover:border-slate-600"}`}
+                  >
+                    <UserPlus size={16} />
+                    <span className="hidden md:block lg:block text-sm font-medium">Invite Member</span>
+                  </button>
+                </DialogTrigger>
+
+                <DialogContent className={`sm:max-w-md ${theme === "dark" ? "border-slate-700 bg-[#1E1E20] text-white" : "border-slate-200 bg-white text-slate-900"}`}>
+                  <DialogHeader>
+                    <DialogTitle className={theme === "dark" ? "text-white" : "text-slate-900"}>Invite member</DialogTitle>
+
+                    <DialogDescription className={theme === "dark" ? "text-slate-400" : "text-slate-600"}>
+                      Enter an email address to send an invitation to this workspace
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="grid gap-2">
+                    <label htmlFor="email" className={theme === "dark" ? "text-slate-200" : "text-slate-700"}>Email</label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={invitedEmail}
+                      onChange={(e) => setInvitedEmail(e.target.value)}
+                      placeholder="user_email@gmail.com"
+                      className={`rounded-md border px-3 py-2 outline-none focus:ring focus:ring-blue-500 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-400 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                    />
+                  </div>
+
+                  <DialogFooter className="gap-2 sm:justify-end">
+                    <DialogClose>
+                      <button onClick={() => setInvitedEmail("")} type="button"
+                        className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors 
+                          ${theme === "dark" ? "border-slate-600 bg-transparent text-white hover:bg-[#2A2A2D]" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                      >
+                        Cancel
+                      </button>
+                    </DialogClose>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        send_invitation()
+                      }}
+                      className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                    >
+                      {invitationLoading ?
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent align-middle"
+                          aria-label="Sending invitation" />
+                        : "Send invitation"}
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+
+          {/* Leave workspace (for members) */}
+          {!isOwner && isMember && (
+            <div>
+              <button className={`py-1.5 px-3 flex gap-2 items-center justify-center rounded-xl border shadow-xs transition-all hover:shadow-sm active:scale-[0.98] duration-300 cursor-pointer
+                ${theme === "dark" ? "border-slate-600 text-white hover:bg-[#2A2A2D] hover:border-slate-400" : "border-slate-400 text-slate-900 hover:bg-slate-100 hover:border-slate-600"}`}>
+                <LogOut className="mt-0.5 text-red-500" size={16} />
+                <span className="text-sm font-medium">Leave workspace</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Invite member (button) (owner) */}
-        {isOwner && <div className="h-10">
-          <Dialog open={invitationDialogOpen} onOpenChange={(open) => { setInvitationDialogOpen(open); if (!open) setInvitedEmail("") }}>
-            <DialogTrigger>
-              <button
-                className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border px-2 py-2 shadow-sm transition-all duration-300 hover:shadow-md active:scale-[0.98]
-                  ${theme === "dark" ? "border-slate-600 text-white hover:bg-[#2A2A2D] hover:border-slate-400" : "border-slate-500 text-slate-900 hover:bg-slate-100 hover:border-slate-700"}`}
-              >
-                <UserPlus size={18} />
-                <span className="hidden md:block">Invite Member</span>
-              </button>
-            </DialogTrigger>
+        {/* Tabs */}
+        <div className="h-10 sm:h-11 flex items-center gap-6 sm:gap-10 lg:gap-16 text-sm font-medium sm:text-[15px] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-            <DialogContent className={`sm:max-w-md ${theme === "dark" ? "border-slate-700 bg-[#1E1E20] text-white" : "border-slate-200 bg-white text-slate-900"}`}>
-              <DialogHeader>
-                <DialogTitle className={theme === "dark" ? "text-white" : "text-slate-900"}>Invite member</DialogTitle>
-
-                <DialogDescription className={theme === "dark" ? "text-slate-400" : "text-slate-600"}>
-                  Enter an email address to send an invitation to this workspace
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="grid gap-2">
-                <label htmlFor="email" className={theme === "dark" ? "text-slate-200" : "text-slate-700"}>Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={invitedEmail}
-                  onChange={(e) => setInvitedEmail(e.target.value)}
-                  placeholder="user_email@gmail.com"
-                  className={`rounded-md border px-3 py-2 outline-none focus:ring focus:ring-blue-500 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-400 bg-white text-slate-900 placeholder:text-slate-500"}`}
-                />
-              </div>
-
-              <DialogFooter className="gap-2 sm:justify-end">
-                <DialogClose>
-                  <button onClick={() => setInvitedEmail("")} type="button"
-                    className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors 
-                      ${theme === "dark" ? "border-slate-600 bg-transparent text-white hover:bg-[#2A2A2D]" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Cancel
-                  </button>
-                </DialogClose>
-
-                <button
-                  type="button"
-                  onClick={() => send_invitation()}
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                >
-                  {invitationLoading ?
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent align-middle"
-                      aria-label="Sending invitation" />
-                    : "Send invitation"}
-                </button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>}
-
-        {/* Leave workspace (for members) */}
-        {!isOwner && isMember && <div className="h-10">
-          <button className={`py-2 px-2 flex gap-2 items-center justify-center rounded-2xl border shadow-sm transition-all hover:shadow-md active:scale-[0.98] duration-300 cursor-pointer
-            ${theme === "dark" ? "border-slate-600 text-white hover:bg-[#2A2A2D] hover:border-slate-400" : "border-slate-500 text-slate-900 hover:bg-slate-100 hover:border-slate-700"}`}>
-            <LogOut className="mt-0.5" color="red" size={18} />
-            <span className="hidden md:block">Leave workspace</span>
-          </button>
-        </div>}
-      </div>
-
-
-      {/* Tabs */}
-      <div style={{ top: NAVBAR_HEIGHT }} className="sticky z-20 bg-transparent">
-        <div className="flex min-h-10 flex-wrap items-stretch gap-x-5 gap-y-2 text-sm font-medium sm:gap-x-10 sm:gap-y-3 sm:text-[15px] lg:gap-x-20">
-
-          <div className="relative flex min-h-10 flex-col items-start">
+          <div className="relative h-full flex items-center">
             <button
-              className={`h-10 whitespace-nowrap ${activeTab === 'members' ? "text-blue-500" : theme === "dark" ? "text-white" : "text-black"}`}
+              className={`h-full flex items-center whitespace-nowrap transition-colors duration-150 ${activeTab === 'members' ? "font-semibold text-blue-500" : theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-800"}`}
               onClick={() => changeActiveTab('members')}
             >
               Members
             </button>
-            {activeTab === 'members' && <span className={`absolute -bottom-0.5 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
+            {activeTab === 'members' && <span className={`absolute bottom-0 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
           </div>
 
           {isOwner && (
             <>
-              <div className="relative flex min-h-10 flex-col items-start">
+              <div className="relative h-full flex items-center">
                 <button
-                  className={`h-10 whitespace-nowrap ${activeTab === 'invitation' ? "text-blue-500" : theme === "dark" ? "text-white" : "text-black"}`}
+                  className={`h-full flex items-center whitespace-nowrap transition-colors duration-150 ${activeTab === 'invitation' ? "font-semibold text-blue-500" : theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-800"}`}
                   onClick={() => changeActiveTab('invitation')}
                 >
                   Invitations
                 </button>
-                {activeTab === 'invitation' && <span className={`absolute -bottom-0.5 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
+                {activeTab === 'invitation' && <span className={`absolute bottom-0 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
               </div>
 
-              <div className="relative flex min-h-10 flex-col items-start">
+              <div className="relative h-full flex items-center">
                 <button
-                  className={`h-10 whitespace-nowrap ${activeTab === 'joinRequest' ? "text-blue-500" : theme === "dark" ? "text-white" : "text-black"}`}
+                  className={`h-full flex items-center whitespace-nowrap transition-colors duration-150 ${activeTab === 'joinRequest' ? "font-semibold text-blue-500" : theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-800"}`}
                   onClick={() => changeActiveTab('joinRequest')}
                 >
                   Join Requests
                 </button>
-                {activeTab === 'joinRequest' && <span className={`absolute -bottom-0.5 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
+                {activeTab === 'joinRequest' && <span className={`absolute bottom-0 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
               </div>
             </>
           )}
         </div>
 
-        <hr className={`border-t-3 lg:border-t-2 ${theme === "dark" ? "border-slate-700" : "border-slate-400"}`} />
+        <hr className={`w-full border-t-2 -mt-0.5 ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`} />
       </div>
 
 
       {/* Members table */}
       {activeTab === 'members' &&
         <>
-          {(isOwner || isMember) && <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <input
-              value={workspace_member_search}
-              onChange={(e) => {
-                dispatch(set_workspace_member_search(e.target.value))
-                dispatch(set_workspace_member_sorting(''))
-              }}
-              className={`h-10 w-full rounded-xl border px-3 outline-none focus:ring focus:ring-blue-500 sm:w-80 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
-              type="text"
-              placeholder="Search members"
-            />
+          {(isOwner || isMember) && (
+            <div className={`sticky top-[93px] sm:top-[97px] z-[40] pt-2.5 pb-2 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 ${theme === "dark" ? "bg-[#1a1a1b]" : "bg-gray-50"}`}>
 
-            <div className="w-full sm:w-auto">
-              <select
-                value={workspace_member_sorting}
-                onChange={(e) => {
-                  dispatch(set_workspace_member_search(''))
-                  dispatch(set_workspace_member_sorting(e.target.value))
-                }}
-                name="sort" defaultValue="" className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 
-                ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`} >
-                <option value="">Sort</option>
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="a-to-z">A to Z</option>
-                <option value="z-to-a">Z to A</option>
-              </select>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative w-full lg:max-w-80 lg:flex-1">
+                  <Search
+                    size={17}
+                    className={`pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 ${theme === "dark" ? "text-slate-400" : "text-slate-500"
+                      }`}
+                  />
+                  <input
+                    type="text"
+                    value={workspace_member_search}
+                    onChange={(e) => {
+                      dispatch(set_workspace_member_search(e.target.value))
+                      dispatch(set_workspace_member_sorting(''))
+                    }}
+                    placeholder="Search name or email"
+                    className={`h-10 w-full rounded-xl border pr-3 pl-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 
+                      ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                  />
+                </div>
+
+                <div className="w-full sm:w-auto">
+                  <select
+                    value={workspace_member_sorting}
+                    onChange={(e) => {
+                      dispatch(set_workspace_member_search(''))
+                      dispatch(set_workspace_member_sorting(e.target.value))
+                    }}
+                    name="sort" defaultValue="" className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 
+                    ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`} >
+                    <option value="">Sort</option>
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="a-to-z">A to Z</option>
+                    <option value="z-to-a">Z to A</option>
+                  </select>
+                </div>
+              </div>
+
+              <hr className={`mt-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
             </div>
-          </div>}
-
-          <hr className={`mt-6 border-1 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+          )}
 
           {/* Table */}
-          <div className="mt-6">
+          <div className="mt-4">
             {workspaceMembersLoading ? (
               <div className="flex justify-center py-10" role="status" aria-label="Loading invitations">
                 <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
               </div>
             ) : (
-              <div className={`overflow-x-auto rounded-lg border ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`}>
+              <div className={`overflow-auto rounded-lg border ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`}>
                 <table className="w-full min-w-[480px] text-left">
 
                   <thead className={`sticky top-0 z-10 ${theme === "dark" ? "bg-[#2A2A2D] text-slate-200" : "bg-slate-50 text-slate-700"}`}>
@@ -277,6 +297,7 @@ const WorkspaceMembers = () => {
                       <th scope="col" className="px-4 py-3 font-semibold">Email</th>
                       {<th scope="col" className="px-4 py-3 font-semibold">Joining Date</th>}
                       <th scope="col" className="px-4 py-3 font-semibold">Role</th>
+                      <th scope="col" className="px-4 py-3 font-semibold">Profile</th>
                       {isOwner && <th scope="col" className="px-4 py-3 font-semibold">Actions</th>}
                     </tr>
                   </thead>
@@ -306,10 +327,16 @@ const WorkspaceMembers = () => {
                           ) : wsMem?.role}
                         </td>
 
+                        {
+                          <td className="px-4 py-3">
+                            <button onClick={() => navigate(`/workspace/member_profile/${workspace_id}/${wsMem?.user?._id.toString()}`)} className={`px-3 py-1 bg-transparent  border rounded-xl cursor-pointer  ${theme === "dark" ? "border-slate-600 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 hover:underline hover:bg-gray-100 duration-200 text-slate-700"}`}>View</button>
+                          </td>
+                        }
+
                         {isOwner && (
                           <td className="px-4 py-3">
                             {wsMem?.role !== 'workspace_owner' && (
-                              <div className={`cursor-pointer inline-flex items-center gap-2 rounded-lg border px-5 py-1.5 text-sm duration-300 active:scale-[0.98] ${theme === "dark" ? "border-slate-600 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 text-slate-700"}`}>
+                              <div className={`cursor-pointer inline-flex items-center gap-2 rounded-lg border px-5 py-1.5 text-sm duration-300 active:scale-[0.98] ${theme === "dark" ? "border-slate-600 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 hover:bg-gray-200 duration-200 text-slate-700"}`}>
                                 <X className="mt-0.5" color="red" size={18} />
                                 <span>Remove</span>
                               </div>

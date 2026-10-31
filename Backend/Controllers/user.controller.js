@@ -254,7 +254,59 @@ export let updateCoverImage = async (req, res) => {
             success: false
         })
     }
-} 
+}
+
+
+// get user profile by id :
+// full route => ../api/user/get_profile/:workspaceid/:userid
+// returning => profile  
+export let get_user_profile = async (req, res) => {
+    try {
+        let workspace_id = req.params.workspaceid
+        if (!workspace_id || workspace_id === '' || !mongoose.Types.ObjectId.isValid(workspace_id)) {
+            return res.status(400).json({
+                message: 'please provide a valid workspace id',
+                success: false
+            })
+        }
+
+        let user_id = req.params.userid
+        if (!user_id  || !mongoose.Types.ObjectId.isValid(user_id)) {
+            return res.status(400).json({ message: 'please provide valid user id', success: false })
+        }
+
+        let workspace_membership = await workspaceMemberShip.findOne({
+            user: user_id,
+            workspace: workspace_id,
+        })
+        
+        if (!workspace_membership) {
+            return res.status(400).json({
+                message: 'user is not a workspace member',
+                success: false
+            })
+        }
+
+        let profile = await userModel.findOne({ _id: user_id }).select('-password')
+        if (!profile) {
+            return res.status(400).json({
+                message: 'user does not have an account',
+                success: false
+            })
+        }
+
+        return res.status(200).json({
+            profile: profile,
+            membership: workspace_membership,
+            success: true
+        })
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: 'server error on get user profile by id api', success: false })
+    }
+}
+
 
 // Check if user exists by email
 // Full route : ../api/user/check_user?email=

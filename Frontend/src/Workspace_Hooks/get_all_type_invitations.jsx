@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux"
 
 export let get_all_type_invitations = (workspace_id) => {
     let dispatch = useDispatch()
-    let {type_invitation} = useSelector(state => state.workspace)
+    let {type_invitation, type_invitation_search, type_invitation_sorting} = useSelector(state => state.workspace)
 
     useEffect(() => {
         if (!workspace_id) return
@@ -14,7 +14,7 @@ export let get_all_type_invitations = (workspace_id) => {
         let fetchInvitations = async () => {
             try {
                 dispatch(set_workspace_type_invitations_loading(true)) 
-                let res = await axios.get(`${import.meta.env.VITE_workspace_endpoint}/history_and_invitation_activity/${workspace_id}?type=${type_invitation}`, { withCredentials: true })
+                let res = await axios.get(`${import.meta.env.VITE_workspace_endpoint}/history_and_invitation_activity/${workspace_id}?search=${type_invitation_search}&type=${type_invitation}&sort=${type_invitation_sorting}`, { withCredentials: true })
 
                 if (res.data.success){
                     dispatch(set_workspace_type_invitations(res?.data?.invitation))          
@@ -31,5 +31,5 @@ export let get_all_type_invitations = (workspace_id) => {
 
         fetchInvitations()
 
-    }, [workspace_id, dispatch, type_invitation])
+    }, [workspace_id, dispatch, type_invitation, type_invitation_search, type_invitation_sorting])
 }

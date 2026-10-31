@@ -1,5 +1,5 @@
 import express from 'express'
-import { userRegistration, userLogin, userLogout, getProfile, userUpdate, checkUserExists, updateCoverImage } from '../Controllers/user.controller.js'
+import { userRegistration, userLogin, userLogout, getProfile, userUpdate, checkUserExists, updateCoverImage, get_user_profile } from '../Controllers/user.controller.js'
 import { protection } from '../Authentication/Auth.js'
 import { upload } from '../Utils/Multer.js'
 
@@ -15,5 +15,7 @@ UserRouter.get('/logout', protection, userLogout)
 UserRouter.get('/profile', protection, getProfile)
 UserRouter.put('/update', protection, upload.single('logo'), userUpdate)
 UserRouter.put('/update_cover_image', protection, upload.single('coverImage'), updateCoverImage)
+
+UserRouter.get('/get_profile/:workspaceid/:userid', protection, get_user_profile)
 
 export default UserRouter
