@@ -12,7 +12,10 @@ import {
     leave_workspace,
     invitation_activity_and_history,
     resend_invitation_to_user,
-    admin_side_type_join_request
+    admin_side_type_join_request,
+    get_workspace_data_by_id,
+    get_user_type_join_request,
+    resend_join_request
 } from '../Controllers/workspace.controller.js'
 
 // import { checkWorkspaceMember, checkWorkspaceOwner } from '../Middleweres/WorkspaceAccess.js' 
@@ -53,8 +56,10 @@ WorkspaceRouter.put("/regenerate_find_code/:workspaceid", protection, regenerate
 // User sends join request by workspace ID or find workspace by findCode → owner accepts/declines [user route]
 WorkspaceRouter.post("/find_by_code", protection, find_workspace_by_findcode)
 WorkspaceRouter.post("/send_join_request/:workspaceid", protection, send_join_request)
+WorkspaceRouter.get("/get_workspace_data/:workspaceid", protection, get_workspace_data_by_id) //[user]
 WorkspaceRouter.get("/sended_join_request", protection, get_sended_requests) //[user]
-WorkspaceRouter.get("/workspace/sended_join_request", protection, get_sended_requests) // []
+WorkspaceRouter.post("/resend_join_request/:joinreqid", protection, resend_join_request) //[user]
+WorkspaceRouter.get("/user_type_join_request", protection, get_user_type_join_request) //[user] [declined, expired request]
 WorkspaceRouter.patch("/:workspaceid/cancel_join_request/:joinreqid", protection, cancel_join_request) //[user]
 WorkspaceRouter.get("/get_pending_join_request/:workspaceid", protection, get_your_pending_requests) //[owner]
 WorkspaceRouter.get("/type_joining_requests/:workspaceid", protection, admin_side_type_join_request)  //[owner] [declined, expired request]

@@ -786,6 +786,8 @@ export let invitation_activity_and_history = async (req, res) => {
         // Expire outdated pending invitations before listing
         await expirePendingInvitations({ workspace: workspace_id })
 
+        let workspace_member_ids = await workspaceMemberShip.distinct('user', { workspace: workspace_id })
+
         let countOf = (status) => ({ $sum: { $cond: [{ $eq: ["$status", status] }, 1, 0] } })
 
         let pipeline = [
@@ -810,6 +812,8 @@ export let invitation_activity_and_history = async (req, res) => {
                     }
                 }
             },
+            // Do not show invitation history for users who are already workspace members
+            { $match: { invitedUser: { $nin: workspace_member_ids } } },
             // Hide emails whose latest invitation is pending or accepted
             { $match: { "invitations.0.status": { $nin: ['pending', 'accepted'] } } }
         ]
@@ -1437,24 +1441,50 @@ export let regenerate_workspace_findcode = async (req, res) => {
 // Returning => workspace
 export let find_workspace_by_findcode = async (req, res) => {
     try {
+        let user = req.user
+        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({
+                message: 'Please povide a valid user id',
+                success: false
+            })
+        }
         let { findCode } = req.body
         if (typeof findCode !== 'string' || !findCode.trim() || findCode === '') {
             return res.status(400).json({ message: "Please provide a valid find code", success: false })
         }
 
-        let workspace = await workspaceModel.findOne({ findCode: findCode.trim().toUpperCase() })
+        let workspace = await workspaceModel.findOne({ findCode: findCode.trim().toUpperCase() }).select('-findCode').populate("workspaceOwner")
         if (!workspace) {
             return res.status(404).json({ message: "No workspace found with this join code", success: false })
         }
 
+        let user_membership = await workspaceMemberShip.findOne({
+            user: user?._id,
+            workspace: workspace?._id,
+            role: { $in: ['workspace_member', 'workspace_owner'] }
+        })
+
+        if (user_membership) {
+            return res.status(400).json({
+                message: 'you are already a member of this workspace',
+                success: false
+            })
+        }
+
+        let user_pending_join_req = await workspaceJoinRequest.findOne({
+            user: user?._id,
+            workspace: workspace?._id,
+            status: 'pending'
+        })
+
+        let workspace_memberships = await workspaceMemberShip.find({
+            workspace: workspace?._id
+        })
+
         return res.status(200).json({
             message: "Workspace found successfully",
             success: true,
-            workspace: {
-                _id: workspace?._id,
-                name: workspace?.name,
-                logo: workspace?.logo
-            }
+            workspace: { ...workspace.toObject(), membersCount: workspace_memberships?.length, pendingJoinRequest: user_pending_join_req ? true : false }
         })
 
     } catch (error) {
@@ -1464,9 +1494,72 @@ export let find_workspace_by_findcode = async (req, res) => {
 }
 
 
+// Get workspace data by id [get request] [user route]
+// Full route : ../api/workspace/get_workspace_data/:workspaceid
+// Returning => workspace
+export let get_workspace_data_by_id = async (req, res) => {
+    try {
+        let user = req.user
+        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({ message: "Please provide a valid authenticated user", success: false })
+        }
+
+        let workspace_id = req.params.workspaceid
+        if (!workspace_id || !mongoose.Types.ObjectId.isValid(workspace_id)) {
+            return res.status(400).json({ message: "Please provide a valid workspace id", success: false })
+        }
+
+        let workspace = await workspaceModel.findById(workspace_id).populate("workspaceOwner", "name email avatar online").select("-findCode").lean()
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found", success: false })
+        }
+
+        let [workspace_membership, user_cancelled_join_request, user_declined_join_request] = await Promise.all([
+            workspaceMemberShip.find({
+                workspace: workspace_id
+            }),
+
+            workspaceJoinRequest.find({
+                user: user?._id,
+                workspace: workspace_id,
+                status: 'cancelled'
+            }),
+
+            workspaceJoinRequest.find({
+                user: user?._id,
+                workspace: workspace_id,
+                status: 'declined'
+            })
+        ])
+
+        let user_pending_join_request = await workspaceJoinRequest.findOne({
+            user: user?._id,
+            workspace: workspace_id,
+            status: 'pending'
+        })
+
+        return res.status(200).json({
+            message: "Workspace data fetched successfully",
+            success: true,
+            workspace: {
+                ...workspace,
+                membersCount: workspace_membership?.length,
+                hasPendingRequest: Boolean(user_pending_join_request),
+                cancelledCount: user_cancelled_join_request ? user_cancelled_join_request.length : 0,
+                declinedCount: user_declined_join_request ? user_declined_join_request.length : 0
+            }
+        })
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Server error in fetchin workspace data api", success: false })
+    }
+}
+
+
 // User can send join request to workspace [post request] [user route]
 // Full route : ../api/workspace/send_join_request/:workspaceid
-// Returning => createJoinRequest
+// Returning => joinrequest
 export let send_join_request = async (req, res) => {
     try {
         let user = req.user
@@ -1515,13 +1608,13 @@ export let send_join_request = async (req, res) => {
 
         await expirePendingJoinRequests({ workspace: workspace_id, user: user?._id })
 
-        let findPendingReq = await workspaceJoinRequest.exists({
+        let find_pending_req = await workspaceJoinRequest.exists({
             user: user?._id,
             workspace: workspace_id,
             status: 'pending',
             expiresAt: { $gt: new Date() }
         })
-        if (findPendingReq) {
+        if (find_pending_req) {
             return res.status(409).json({ message: "You already have a active pending join request to this workspace", success: false })
         }
 
@@ -1541,7 +1634,7 @@ export let send_join_request = async (req, res) => {
         return res.status(201).json({
             message: "Join request sent successfully",
             success: true,
-            createJoinRequest
+            joinrequest: createJoinRequest
         })
 
     } catch (error) {
@@ -1560,9 +1653,58 @@ export let send_join_request = async (req, res) => {
 }
 
 
+// user can resend his expire and cnncelled join request to workspace : [patch request] [user route]
+// Full route : ../api/workspace/resend_join_request/:joinreqid
+// Returning => joinrequest
+export let resend_join_request = async (req, res) => {
+    try {
+        let user = req.user
+        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({ message: "Please provide a authenticated user", success: false })
+        }
+
+        let joinreq_id = req.params.joinreqid
+        if (!joinreq_id || !mongoose.Types.ObjectId.isValid(joinreq_id)) {
+            return res.status(400).json({ message: "Please provide a valid join request id", success: false })
+        }
+
+        let joinRequest = await workspaceJoinRequest.findById(joinreq_id)
+        if (!joinRequest) {
+            return res.status(404).json({ message: "Join request not found", success: false })
+        }
+        
+        if (joinRequest?.user.toString() !== user?._id.toString()) {
+            return res.status(403).json({ message: "You are not authorized to resend this join request", success: false })
+        }
+
+        if (joinRequest?.status === 'declined'){
+            return res.status(400).json({ message: "Join request has been declined and cannot be resent", success: false })
+        }
+
+        let newJoinRequest = await workspaceJoinRequest.create({
+            user: joinRequest?.user,
+            workspace: joinRequest?.workspace,
+            status: 'pending'
+        })
+
+        return res.status(200).json({
+            message: "Join request resent successfully",
+            success: true,
+            joinrequest: newJoinRequest
+        })
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "server error in resend join request api",
+            success: false
+        })
+    }
+}
+
 // User can get his all sended req for workspace : [GET] [user route]
 // Full route : ../api/workspace/sended_join_req
-// Returning => allSentRequests
+// Returning => sentRequests // pending join requests sent by the user
 export let get_sended_requests = async (req, res) => {
     try {
         let user = req.user
@@ -1573,10 +1715,15 @@ export let get_sended_requests = async (req, res) => {
             })
         }
 
+        let { query, sort } = req.query
+        query = query?.toString().trim() || ''
+        sort = sort?.toString().trim() || ''
+
+
         // Expire outdated pending join requests before listing
         await expirePendingJoinRequests({ user: user?._id })
 
-        let allSentRequests = await workspaceJoinRequest.find({ user: user?._id }).sort({ createdAt: -1 }).populate("workspace")
+        let allSentRequests = await workspaceJoinRequest.find({ user: user?._id, status: 'pending' }).sort({ createdAt: -1 }).populate("workspace")
 
         if (allSentRequests.length === 0) {
             return res.status(404).json({ message: "No sent join requests found", success: false })
@@ -1584,12 +1731,105 @@ export let get_sended_requests = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            allSentRequests
+            sentRequests: allSentRequests
         })
 
     } catch (error) {
         return res.status(500).json({
             message: "server error in get sended join request api",
+            success: false
+        })
+    }
+}
+
+
+// user's [declined, cancelled, expired] join requests : [get request] [user route]
+// Full route : ../api/workspace/user_type_join_request
+// Returning => userJoinReq
+export let get_user_type_join_request = async (req, res) => {
+    try {
+        let user = req.user
+        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({ message: "Please provide a valid user", success: false })
+        }
+
+        // Expire outdated pending join requests before listing
+        await expirePendingJoinRequests({ user: user?._id })
+
+        let requests = await workspaceJoinRequest.aggregate([
+            {
+                $match: {
+                    user: new mongoose.Types.ObjectId(user?._id)
+                }
+            },
+            {
+                $sort: {
+                    updatedAt: -1
+                }
+            },
+            // workspace ke hisaab se group = ek workspace ek row
+            {
+                $group: {
+                    _id: '$workspace',
+                    cancelledCount: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
+                    expiredCount: { $sum: { $cond: [{ $eq: ['$status', 'expired'] }, 1, 0] } },
+                    declinedCount: { $sum: { $cond: [{ $eq: ['$status', 'declined'] }, 1, 0] } },
+                    latest: { $first: '$$ROOT' }
+                }
+            },
+            // Sirf wahi workspaces dikhao jinki latest request declined, cancelled, ya expired hai (pending/accepted nahi)
+            {
+                $match: {
+                    'latest.status': { $in: ['declined', 'cancelled', 'expired'] }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'workspaces',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'workspace'
+                }
+            },
+            {
+                $unwind: '$workspace'
+            },
+            {
+                $project: {
+                    _id: 0,
+                    workspaceId: '$_id',
+                    workspaceName: '$workspace.name',
+                    workspace: {
+                        _id: '$workspace._id',
+                        name: '$workspace.name',
+                        logo: '$workspace.logo',
+                        privacy: '$workspace.privacy',
+                        description: '$workspace.description'
+                    },
+                    cancelledCount: 1,
+                    expiredCount: 1,
+                    declinedCount: 1,
+                    latest: {
+                        _id: '$latest._id',
+                        status: '$latest.status',
+                        updatedAt: '$latest.updatedAt'
+                    }
+                }
+            },
+            {
+                $sort: { 'latest.updatedAt': -1 }
+            }
+        ])
+
+        return res.status(200).json({
+            success: true,
+            userJoinReq: requests || []
+        })
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "server error in get user type join request api",
             success: false
         })
     }
@@ -1720,8 +1960,8 @@ export let admin_side_type_join_request = async (req, res) => {
         let { search, sort } = req.query
         sort = sort?.toString().trim() || ''
         search = search?.toString().trim() || ''
-        
-        
+
+
         let workspace_id = req.params.workspaceid
         if (workspace_id === '' || !mongoose.Types.ObjectId.isValid(workspace_id) || !workspace_id) {
             return res.status(401).json({ message: 'provide a valid workspce id', success: false })
@@ -1731,15 +1971,14 @@ export let admin_side_type_join_request = async (req, res) => {
         if (!owner_membership) { return res.status(400).json({ message: 'not authorize to get data', success: false }) }
 
         let requests = await workspaceJoinRequest.aggregate([
-            // is workspace ki saari requests
-            { $match: { workspace: new mongoose.Types.ObjectId(workspace_id) } },
+            // is workspace ki saari requests (cancelled ko chhod ke)
+            { $match: { workspace: new mongoose.Types.ObjectId(workspace_id), status: { $ne: 'cancelled' } } },
             { $sort: { updatedAt: -1 } },
 
             // user ke hisaab se group = ek user ek row
             {
                 $group: {
                     _id: '$user',
-                    cancelledCount: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
                     expiredCount: { $sum: { $cond: [{ $eq: ['$status', 'expired'] }, 1, 0] } },
                     declinedCount: { $sum: { $cond: [{ $eq: ['$status', 'declined'] }, 1, 0] } },
                     latest: { $first: '$$ROOT' }
@@ -1763,7 +2002,6 @@ export let admin_side_type_join_request = async (req, res) => {
                 $project: {
                     _id: 0,
                     user: { _id: '$user._id', name: '$user.name', email: '$user.email' },
-                    cancelledCount: 1,
                     declinedCount: 1,
                     expiredCount: 1,
                     latest: { _id: 1, status: 1, updatedAt: 1 }

@@ -19,14 +19,12 @@ const Members_Profile = () => {
     let member_id = param.userid
 
     let current_workspace = workspace?.find(ws => ws?.workspace?._id === workspace_id)
-    let isOwner = current_workspace.role === 'workspace_owner'
+    let isOwner = current_workspace?.role === 'workspace_owner'
     let isMember = current_workspace?.role === 'workspace_member'
 
     let [member, setMember] = useState({})
     let [membership, setMembership] = useState(null)
     let [memberLoading, setMemberLoading] = useState(false)
-
-    console.log(membership);
 
 
     // Members profile

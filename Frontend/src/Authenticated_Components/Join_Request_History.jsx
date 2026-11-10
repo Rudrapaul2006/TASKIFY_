@@ -11,6 +11,7 @@ const Join_Request_History = ({ onClear }) => {
     let params = useParams()
     let workspace_id = params.id
 
+    // owner hook [for getting all type of join request history]
     get_all_type_join_request(workspace_id)
 
     let navigate = useNavigate()
@@ -153,7 +154,7 @@ const Join_Request_History = ({ onClear }) => {
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className={activity_css}>
                                                 <span className="text-[15px] font-semibold text-red-400">{i?.declinedCount || 0}x</span>
-                                                <span className="whitespace-nowrap">Declined</span>
+                                                <span className="whitespace-nowrap">You declined</span>
                                             </span>
 
                                             <span className={activity_css}>

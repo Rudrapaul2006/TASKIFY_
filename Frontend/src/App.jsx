@@ -10,6 +10,8 @@ import SignUp from "./Authentication/SignUp";
 import useConnectWithSocket from "./SocketConnection/connectWithSocket";
 import UserProfile from "./Authenticated_Pages/UserProfile";
 import Members_Profile from "./Authenticated_Pages/Members_Profile";
+import FindWorkspaceAndSendReq from "./Authenticated_Pages/FindWorkspaceAndSendReq";
+import Workspace_Details from "./Authenticated_Pages/Workspace_Details";
 
 const App = () => {
   // Get logged in user  
@@ -53,6 +55,8 @@ const App = () => {
         <Route path={`/workspace/activity/:id`} element={user ? <AuthenticatedHome /> : <Navigate to="/" replace />} />
         <Route path={`/workspace/members/:id`} element={user ? <AuthenticatedHome /> : <Navigate to="/" replace />} />
         <Route path={`/workspace/member_profile/:workspaceid/:userid`} element={user ? <Members_Profile /> : <Navigate to="/" replace />} />
+        <Route path={`/workspace/join/:userid`} element={user ? <FindWorkspaceAndSendReq /> : <Navigate to="/" replace />} />
+        <Route path={`/workspace/details/:id`} element={user ? <Workspace_Details /> : <Navigate to="/" replace />} />   {/* id - workspace_id */}
 
         {/* Catch-all fallback */}
         <Route path="*" element={<Navigate to={user ? "/authenticatedhome" : "/"} replace />} />

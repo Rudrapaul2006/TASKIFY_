@@ -3,7 +3,7 @@ import { VscThreeBars } from "react-icons/vsc";
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CgProfile } from "react-icons/cg";
-import { LogOut, Moon, Sun, User } from 'lucide-react';
+import { LogOut, Moon, Search, Sun, User, UserPlus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { TbDotsFilled } from "react-icons/tb";
 import axios from 'axios';
@@ -84,7 +84,7 @@ const Auth_Navbar = () => {
                                 </button>
                             </PopoverTrigger>
 
-                            <PopoverContent className={`mt-6 w-64 p-0 lg:hidden ${theme === "dark" ? "bg-[#2B2C2E] text-white" : "bg-white text-black"}`}>
+                            <PopoverContent align="end" sideOffset={8} className={`w-64 p-0 lg:hidden ${theme === "dark" ? "bg-[#2B2C2E] text-white" : "bg-white text-black"}`}>
                                 <div className="p-3">
                                     <p className={`mb-3 text-xs font-semibold ${theme === "dark" ? "text-slate-400" : "text-gray-400"}`}>  ACCOUNT </p>
 
@@ -101,6 +101,13 @@ const Auth_Navbar = () => {
                                 </div>
 
                                 <div className={`border-t p-2 ${theme === "dark" ? "border-slate-700" : "border-gray-200"}`}>
+                                    <button onClick={() => navigate(`/workspace/join/${user?._id}`)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[15px] transition-colors ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
+                                        <Search size={20} className="shrink-0" />
+                                        <span>Find &amp; request to join</span>
+                                    </button>
+
+                                    <hr className={`mt-2 mb-2 ${theme === "dark" ? "border-slate-700" : "border-gray-200"}`} />
+
                                     <button onClick={() => navigate('/user_profile')} className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[15px] ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
                                         <CgProfile size={20} /> <span className="cursor-pointer">Profile</span>
                                     </button>
@@ -124,10 +131,10 @@ const Auth_Navbar = () => {
                         </button>
 
                         <Popover onOpenChange={(open) => setLgActive(open)}>
-                            <PopoverTrigger>
-                                <div
-                                    onClick={() => setLgActive(!lgactive)}
-                                    className={`flex h-12 w-12 items-center justify-center rounded-md duration-75 ${lgactive ? theme === "dark" ? "border border-blue-400 bg-blue-500/25 text-blue-200"
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    className={`flex h-12 w-12 items-center justify-center rounded-md duration-75 cursor-pointer ${lgactive ? theme === "dark" ? "border border-blue-400 bg-blue-500/25 text-blue-200"
                                         : "border border-blue-400 bg-blue-200 text-blue-700" : theme === "dark" ? "border border-transparent text-slate-200 hover:border-[#545458] hover:bg-[#2A2A2D]"
                                         : "border border-transparent text-slate-700 hover:border-gray-300 hover:bg-gray-200"}`}
                                 >
@@ -142,10 +149,10 @@ const Auth_Navbar = () => {
                                             />
                                         )}
                                     </div>
-                                </div>
+                                </button>
                             </PopoverTrigger>
 
-                            <PopoverContent className={`mt-4 hidden w-72 p-0 lg:block ${theme === "dark" ? "bg-[#2B2C2E] text-white shadow-lg" : "bg-white text-black"}`}>
+                            <PopoverContent align="end" sideOffset={8} className={`hidden w-72 p-0 lg:block ${theme === "dark" ? "bg-[#2B2C2E] text-white shadow-lg" : "bg-white text-black"}`}>
                                 <div className={`border-b p-3 ${theme === "dark" ? "border-[#3A3A3D]" : "border-gray-200"}`}>
                                     <p className={`mb-3 text-xs font-semibold ${theme === "dark" ? "text-slate-400" : "text-gray-400"}`}>ACCOUNT</p>
 
@@ -162,6 +169,13 @@ const Auth_Navbar = () => {
                                 </div>
 
                                 <div className="p-2">
+                                    <button onClick={() => navigate(`/workspace/join/${user?._id}`)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[15px] transition-colors ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
+                                        <Search size={20} className="shrink-0" />
+                                        <span>Find &amp; request to join</span>
+                                    </button>
+
+                                    <hr className={`mt-2 mb-2 ${theme === "dark" ? "border-slate-700" : "border-gray-200"}`} />
+
                                     <button onClick={() => navigate('/user_profile')} className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left ${theme === "dark" ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}>
                                         <CgProfile size={21} /> <span className="text-[15px] cursor-pointer">Profile</span>
                                     </button>

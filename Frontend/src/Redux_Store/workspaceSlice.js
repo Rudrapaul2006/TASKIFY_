@@ -5,32 +5,32 @@ let workspaceSlice = createSlice({
     name: "workspace",
 
     initialState: {
-        workspace: [],
+        workspace: [], // [all users workspace data stored here] [owner / member]
         workspaceLoading: false,
         hasFetchedWorkspaces: false,
 
-        workspaceMembers: [], // all workspace_members data stored here
+        workspaceMembers: [], // all workspace_members data stored here [owner / member]
         workspaceMembersLoading: false,
         workspaceMembersCount: 0, // each workspace_members count
         workspace_member_search: '',
         workspace_member_sorting: '',
 
 
-        //workspace invitation
+        //workspace invitation [pending invitation] [owner side]
         workspace_invitations: [], // pending invitations 
         workspace_invitations_loading: false,
         pending_invitation_search: '',
         pending_invitation_sorting: '',
 
 
-        //workspace join request
+        //workspace join request [pending join request] [owner side]
         workspace_join_request: [],
         workspace_join_request_loading: false,
         pending_join_request_search: '',
         pending_join_request_sort: '',
 
 
-        // all type invitation activity  [cancel, declined and expire invitation data]
+        // all type invitation activity  [cancel, declined and expire invitation data] [owner side]
         workspace_type_invitations: [], 
         workspace_type_invitations_loading: false,
         type_invitation_search: '', //for search by name and email 
@@ -38,11 +38,30 @@ let workspaceSlice = createSlice({
         type_invitation_sorting: '', //sort
 
 
-        // all type join request [cancel, declined and expired join_request data]
+        // all type join request [cancel, declined and expired join_request data] [owner side]
         workspace_type_join_request: [],
         workspace_type_join_request_loding: false,
         type_join_request_search: '',
         type_join_request_sort: '',
+
+
+
+        // user side :
+        user_join_requests: [], // user send join req to other workspace , that request stored here
+        user_join_request_loading: false,
+
+        search_user_join_request: '',
+        sort_user_join_request: '',
+
+
+
+        // user [declined, expired, cancelled ] join request stored here :
+        user_type_join_request: [],
+        user_type_join_request_loading: false,
+
+        // search_user_type_join_request: '',
+        // sort_user_type_join_request: '' 
+
     }, 
 
     reducers: { 
@@ -63,7 +82,7 @@ let workspaceSlice = createSlice({
 
 
 
-        // Total member's in workspace : 
+        // Total member's in workspace : [owner / member]
         setWorkspaceMembers: (state, action) => {
             state.workspaceMembers = action.payload
         },
@@ -85,7 +104,7 @@ let workspaceSlice = createSlice({
 
 
 
-        // workspace invitations
+        // workspace invitations [owner side]
         set_workspace_invitations: (state, action) => {
             state.workspace_invitations = action.payload || []
         },
@@ -112,7 +131,7 @@ let workspaceSlice = createSlice({
         
 
         
-        // workspace join request :
+        // workspace join request : [owner side]
         set_workspace_join_request: (state, action) => {
             state.workspace_join_request = action.payload || []
         },
@@ -137,7 +156,7 @@ let workspaceSlice = createSlice({
 
 
 
-        // type invitations
+        // type invitations [owner side]
         set_workspace_type_invitations: (state, action) => {
             state.workspace_type_invitations = action.payload || []
         },
@@ -173,7 +192,7 @@ let workspaceSlice = createSlice({
 
 
 
-        // type join requests
+        // type join requests [owner side]
         set_workspace_type_join_request : (state, action) => {
             state.workspace_type_join_request = action.payload
         },
@@ -186,6 +205,44 @@ let workspaceSlice = createSlice({
         set_type_join_request_sort: (state, action) => {
             state.type_join_request_sort = action.payload
         },
+
+
+
+        // user side reducers
+        set_user_join_requests: (state , action) => {
+            state.user_join_requests = action.payload
+        },
+        set_user_join_request_loading: (state , action) => {
+            state.user_join_request_loading = action.payload
+        },
+
+        set_search_user_join_request: (state, action) => {
+            state.search_user_join_request = action.payload
+        },
+        set_sort_user_join_request: (state, action) => {
+            state.sort_user_join_request = action.payload
+        },
+
+        cancel_user_join_request: (state, action) => {
+            state.user_join_requests = state.user_join_requests.filter(req => req?._id !== action.payload?._id)
+        },
+
+        
+
+
+
+        // type join request [user side] [declined, expired and cancelled join request]
+        set_user_type_join_request: (state, action) => {
+            state.user_type_join_request = action.payload
+        },
+        set_user_type_join_request_loading: (state, action) => {
+            state.user_type_join_request_loading = action.payload
+        },
+
+
+        resend_user_join_request: (state, action) => {
+            state.user_type_join_request = state.user_type_join_request.filter(req => req?._id !== action.payload?._id)
+        },
     }
 })
 
@@ -196,6 +253,11 @@ export let { setWorkspace, setWorkspaceLoading, setAddWorkspace,
     set_workspace_join_request, set_workspace_join_request_loading, accept_join_request, decline_join_request, set_pending_join_request_search, set_pending_join_request_sort,
     set_workspace_type_invitations, set_workspace_type_invitations_loading, 
     set_workspace_type_join_request, set_workspace_type_join_request_loding,
-    set_type_join_request_search, set_type_join_request_sort
+    set_type_join_request_search, set_type_join_request_sort,
+
+
+    // user side reducers : 
+    set_user_join_requests, set_user_join_request_loading, set_search_user_join_request, set_sort_user_join_request, cancel_user_join_request,
+    set_user_type_join_request, set_user_type_join_request_loading, resend_user_join_request
 } = workspaceSlice.actions
 export default workspaceSlice.reducer

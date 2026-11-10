@@ -29,7 +29,7 @@ const WorkspaceMembers = () => {
 
 
   // Persist the selected tab per workspace so refresh keeps the same view 
-  let tabStorageKey = `workspaceMembersTab:${workspace_id}`
+  let tabStorageKey = `workspace_tab:${workspace_id}`
   let validTabs = ["members", "invitation", "joinRequest"]
 
   let [activeTab, setActiveTab] = useState(() => {
