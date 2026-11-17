@@ -1,7 +1,6 @@
 import {io} from 'socket.io-client'
 
 // let socket = io(import.meta.env.VITE_Server_url)
-
 let socket = null 
 
 export let connectSocket = (userId) => {
@@ -17,7 +16,7 @@ export let connectSocket = (userId) => {
     return socket
 }
 
-export let getSocket = () => socket
+export let getSocket = () => socket 
 
 export let disconnectSocket = () => {
     if (socket){

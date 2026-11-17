@@ -59,7 +59,6 @@ export let create_workspace = async (req, res) => {
         let workspace = await workspaceModel.create({
             workspaceOwner: user?._id,
             name: workspace_name,
-            privacy: privacy || 'public',
             logo
         })
 
@@ -1631,6 +1630,23 @@ export let send_join_request = async (req, res) => {
             })
         }
 
+        await createJoinRequest.populate("user", "name email avatar online")
+        
+        // send real time data through socket io 
+        let io = req.app.get("io")
+        
+        // send join req to workspace owner :
+        if (io) {
+            let workspace_owner_id = workspace?.workspaceOwner?.toString()
+
+            if (workspace_owner_id) {
+                io.to(`user_${workspace_owner_id}`).emit(`user_join_requests`, {
+                    joinrequest: createJoinRequest,
+                    success: true
+                })
+            }
+        }
+
         return res.status(201).json({
             message: "Join request sent successfully",
             success: true,
@@ -1687,6 +1703,24 @@ export let resend_join_request = async (req, res) => {
             status: 'pending'
         })
 
+        await newJoinRequest.populate("workspace", "name workspaceOwner")
+        await newJoinRequest.populate("user", "name email avatar online")
+        
+        // send real time data through socket io 
+        let io = req.app.get("io")
+        
+        // re-send join req to workspace owner :
+        if (io) {
+            let workspace_owner_id = newJoinRequest?.workspace?.workspaceOwner?.toString()
+
+            if (workspace_owner_id) {
+                io.to(`user_${workspace_owner_id}`).emit(`user_join_requests`, {
+                    joinrequest: newJoinRequest,
+                    success: true
+                })
+            }
+        }
+
         return res.status(200).json({
             message: "Join request resent successfully",
             success: true,
@@ -1701,6 +1735,7 @@ export let resend_join_request = async (req, res) => {
         })
     }
 }
+
 
 // User can get his all sended req for workspace : [GET] [user route]
 // Full route : ../api/workspace/sended_join_req
@@ -1870,12 +1905,32 @@ export let cancel_join_request = async (req, res) => {
                 message: `Join request cannot be cancelled because its status is '${joinRequest.status}'`,
                 success: false
             })
-        }
+        }   
+
+        let workspace = await workspaceModel.findOne({
+            _id : joinRequest?.workspace
+        }).lean()
 
         joinRequest.status = 'cancelled'
         joinRequest.respondedBy = user?._id
         joinRequest.respondedAt = new Date()
         await joinRequest.save()
+
+        
+        // send real time data through socket io 
+        let io = req.app.get("io")
+        
+        // send join req to workspace owner :
+        if (io) {
+            let workspace_owner_id = workspace?.workspaceOwner?.toString()
+
+            if (workspace_owner_id) {
+                io.to(`user_${workspace_owner_id}`).emit(`canceled_join_request`, {
+                    joinrequest: joinRequest,
+                    success: true
+                })
+            }
+        }
 
         return res.status(200).json({
             message: "Join request cancelled successfully",
@@ -2197,13 +2252,13 @@ export let owner_decline_join_request = async (req, res) => {
         let workspace_id = joiningRequest?.workspace
 
         let owner_membership = await workspaceMemberShip.findOne({
-            user: owner._id,
+            user: owner?._id,
             workspace: workspace_id,
             role: 'workspace_owner'
         })
         if (!owner_membership) {
             return res.status(403).json({
-                message: 'You are not workspace admin/owner',
+                message: 'You are not workspace owner',
                 success: false
             })
         }
@@ -2230,6 +2285,23 @@ export let owner_decline_join_request = async (req, res) => {
         joiningRequest.respondedBy = owner?._id
         joiningRequest.respondedAt = new Date()
         await joiningRequest.save()
+
+
+        // send real time data through socket io 
+        let io = req.app.get("io")
+        
+        // send join req to workspace owner :
+        if (io) {
+            let user_id = joiningRequest?.user?.toString()
+    
+            if (user_id) {
+                io.to(`user_${user_id}`).emit(`declined_user_join_request`, {
+                    joinrequest: joiningRequest,
+                    success: true
+                })
+            }
+        }
+        
 
         return res.status(200).json({
             message: "Successfully declined user joining request",

@@ -1,4 +1,4 @@
-import { accept_join_request, decline_join_request, set_pending_join_request_search, set_pending_join_request_sort, set_workspace_join_request_loading, setWorkspaceMembersCount } from '@/Redux_Store/workspaceSlice'
+import { accept_join_request, decline_join_request, set_pending_join_request_search, set_pending_join_request_sort, set_workspace_join_request, set_workspace_join_request_loading, set_workspace_type_join_request, setWorkspaceMembersCount } from '@/Redux_Store/workspaceSlice'
 import get_all_join_request from '@/Workspace_Hooks/get_all_join_request'
 import get_all_members from '@/Workspace_Hooks/get_all_members'
 import axios from 'axios'
@@ -9,8 +9,13 @@ import { FcRight } from 'react-icons/fc'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import Join_Request_History from './Join_Request_History'
+import { getSocket } from '@/SocketConnection/socket'
 
 const Join_Requests = () => {
+  let socket = getSocket()
+
+  let { user } = useSelector(state => state.user)
+
   let navigate = useNavigate()
   let dispatch = useDispatch()
   let param = useParams()
@@ -19,11 +24,39 @@ const Join_Requests = () => {
   // Activity toggler : [cancelled, expired]
   let [isActivity, setIsActivity] = useState('')
 
-  // get workspace join request [hook] - passing activity -> when clear activity then it fetch new data 
+  // get workspace join request [hook] - passing activity -> when clear activity then it fetch new data [admin hook]
   get_all_join_request(workspace_id, isActivity)
+
 
   let { theme } = useSelector(state => state.theme)
   let { workspace, workspace_join_request, workspace_join_request_loading, workspaceMembersCount, pending_join_request_search, pending_join_request_sort } = useSelector(state => state.workspace)
+
+
+  // set io join request data (user sned join request and resend join request) :
+  useEffect(() => {
+    if (socket) {
+      socket.on("user_join_requests", (data) => {
+        dispatch(set_workspace_join_request([data.joinrequest, ...(workspace_join_request || [])]))
+      })
+
+      return () => {
+        socket.off("user_join_requests")
+      }
+    }
+  }, [user?._id, socket, workspace_id, workspace_join_request, dispatch])
+
+  // filter user's cancel join request :
+  useEffect(() => {
+    if (socket) {
+      socket.on("canceled_join_request", (data) => {
+        dispatch(decline_join_request(data.joinrequest))
+      })
+    }
+
+    return () => {
+      socket.off("canceled_join_request")
+    }
+  }, [socket, user?._id, dispatch])
 
   let currentWorkspace = workspace.find(ws => ws?.workspace?._id === workspace_id)
   let isOwner = currentWorkspace?.role === 'workspace_owner'
@@ -107,7 +140,7 @@ const Join_Requests = () => {
     navigate(`/workspace/members/${workspace_id}?active_tab=joinRequest${pending_join_request_search ? '&query=' + pending_join_request_search : ''}${pending_join_request_sort ? '&sort=' + pending_join_request_sort : ''}`, { replace: true })
   }, [dispatch, navigate, pending_join_request_search, pending_join_request_sort, workspace_id, isActivity])
 
-  
+
   return (
     <>
       {/* Pending Join Requests Sticky Header */}

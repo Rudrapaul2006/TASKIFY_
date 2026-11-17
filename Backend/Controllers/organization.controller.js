@@ -39,21 +39,21 @@ export let create_organization = async (req, res) => {
             return res.status(400).json({ message: "Please provide a workspace id", success: false })
         }
 
-        let { organization_name, privacy, organizationLeaderEmail } = req.body
+        let { organization_name, description, teamLeaderEmail } = req.body
 
         if (typeof organization_name !== 'string' || !(organization_name = organization_name.trim())) {
             return res.status(400).json({ message: 'Please provide a valid organization name', success: false })
         }
 
-        if (typeof privacy !== 'string' || !(privacy = privacy.trim())) {
-            return res.status(400).json({ message: 'Please provide a valid privacy setting', success: false })
+        if (typeof description !== 'string') {
+            return res.status(400).json({ message: 'Please provide a valid organization description', success: false })
         }
 
-        if (typeof organizationLeaderEmail !== 'string' || !(organizationLeaderEmail = organizationLeaderEmail.trim())) {
+        if (typeof teamLeaderEmail !== 'string' || !(teamLeaderEmail = teamLeaderEmail.trim())) {
             return res.status(400).json({ message: 'Please provide a valid organization leader email', success: false })
         }
 
-        organizationLeaderEmail = organizationLeaderEmail.toLowerCase().trim()
+        teamLeaderEmail = teamLeaderEmail.toLowerCase().trim()
 
         let user_membership_in_workspace = await workspaceMemberShip.findOne({
             user: user?._id,
@@ -65,7 +65,7 @@ export let create_organization = async (req, res) => {
             return res.status(403).json({ message: 'You are not allowed to create organization in this workspace', success: false })
         }
 
-        let org_leader = await userModel.findOne({ email: organizationLeaderEmail }).select('_id email').lean()
+        let org_leader = await userModel.findOne({ email: teamLeaderEmail }).select('_id email').lean()
         if (!org_leader) {
             return res.status(404).json({ message: 'Organization leader not found', success: false })
         }
@@ -80,6 +80,17 @@ export let create_organization = async (req, res) => {
             return res.status(403).json({ message: 'Organization leader is not a member of this workspace', success: false })
         }
 
+        let existing_org = await organizationModel.findOne({
+            workspace: workspace_id,
+            name: { $regex: new RegExp(`^${organization_name.trim()}$`, 'i') }
+        })
+        if (existing_org) {
+            return res.status(400).json({
+                message: 'An organization with this name already exists in this workspace',
+                success: false
+            })
+        }
+
         let logo = ''
         if (req.file) {
             let upload_on_cloudinary = await uploadImageOnCloudinary(req.file.path)
@@ -91,28 +102,18 @@ export let create_organization = async (req, res) => {
 
         let organization = await organizationModel.create({
             name: organization_name,
-            privacy,
+            description: description,
             logo,
             workspace: workspace_id,
-            organizationOwner: user?._id,
-            organizationLeader: org_leader?._id
+            orgAdmin: org_leader?._id
         })
 
         await organizationMembership.create({
-            user: user?._id,
+            user: org_leader?._id,
             workspace: workspace_id,
             organization: organization?._id,
-            role: 'organization_owner'
+            role: 'organization_admin'
         })
-
-        if (org_leader?._id.toString() !== user?._id.toString()) {
-            await organizationMembership.create({
-                user: org_leader?._id,
-                workspace: workspace_id,
-                organization: organization?._id,
-                role: 'organization_leader'
-            })
-        }
 
         return res.status(200).json({
             message: 'Organization created successfully',
@@ -122,8 +123,85 @@ export let create_organization = async (req, res) => {
 
     } catch (error) {
         console.log(error);
+        if (error?.code === 11000) {
+            return res.status(400).json({
+                message: 'An organization with this name already exists in this workspace',
+                success: false
+            })
+        }
         return res.status(500).json({
             message: "server error in create organization api",
+            success: false
+        })
+    }
+}
+
+
+// search workspce-member by email : 
+export let search_member = async (req, res) => {
+    try {
+        let user = req.user
+        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({ message: "Please provide an authenticated user", success: false })
+        }
+
+        let workspace_id = req.params.workspaceid
+        if (!workspace_id || workspace_id === '' || !mongoose.Types.ObjectId.isValid(workspace_id)){
+            return res.status(400).json({
+                message: 'please provide a valid workspace id',
+                success: false
+            })
+        }
+
+        let isMember = await workspaceMemberShip.exists({
+            workspace: workspace_id,
+            user: user?._id
+        })
+        if (!isMember) {
+            return res.status(403).json({
+                message: 'You are not a member of this workspace',
+                success: false
+            })
+        }
+
+        // get from frontend
+        let search = (req.query.email || req.query.query || req.query.search || '').toString().trim()
+
+        let membersQuery = { workspace: workspace_id }
+
+        if (search) {
+            let matchedUsers = await userModel.find({
+                $or: [
+                    { email: { $regex: search, $options: 'i' } },
+                    { name: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id').lean()
+
+            if (!matchedUsers.length) {
+                return res.status(200).json({
+                    success: true,
+                    members: []
+                })
+            }
+
+            membersQuery.user = { $in: matchedUsers.map(u => u?._id) }
+        }
+
+        let limit = parseInt(req.query.limit) || 3
+        let members = await workspaceMemberShip.find(membersQuery)
+            .populate("user", 'name email avatar online')
+            .limit(limit)
+            .lean()
+
+        return res.status(200).json({
+            success: true,
+            members: members || []
+        })
+        
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: 'something error in search member api',
             success: false
         })
     }
@@ -154,10 +232,9 @@ export let get_organization = async (req, res) => {
         let user_organizations = await organizationModel.find({ workspace: workspace_id })
         if (user_organizations.length === 0) {
             return res.status(404).json({ message: 'No organizations found in this workspace', success: false })
-        } 
+        }
 
         return res.status(200).json({
-            message: 'Organizations retrieved successfully',
             organizations: user_organizations,
             success: true
         })
@@ -197,7 +274,7 @@ export let get_organization_by_id = async (req, res) => {
             return res.status(400).json({ message: 'You are not a member of this workspace', success: false })
         }
 
-        let organization = await organizationModel.findOne({ _id: organization_id, workspace: workspace_id }).populate('workspace', 'name logo').populate('organizationOwner', 'name email online')
+        let organization = await organizationModel.findOne({ _id: organization_id, workspace: workspace_id }).populate('workspace', 'name logo').populate('orgAdmin', 'name email online')
         if (!organization) {
             return res.status(404).json({ message: 'Organization not found in this workspace', success: false })
         }
@@ -263,7 +340,7 @@ export let update_organization = async (req, res) => {
         }
 
 
-        let user_organization_membership = await organizationMembership.findOne({ user: user?._id, workspace: workspace_id, organization: organization_id, role: { $in: ['organization_owner'] } })
+        let user_organization_membership = await organizationMembership.findOne({ user: user?._id, workspace: workspace_id, organization: organization_id, role: { $in: ['organization_admin'] } })
         if (!user_organization_membership) {
             return res.status(403).json({ message: 'You are not authorized to update this organization', success: false })
         }
@@ -287,59 +364,6 @@ export let update_organization = async (req, res) => {
         console.log(error);
         return res.status(500).json({
             message: "server error in update organization api",
-            success: false
-        })
-    }
-}
-
-
-// Update organization privacy : [PATCH] [organization_owner]
-// Route: /api/organization/update_organization_privacy/:workspaceid/:organizationid
-// Body => { privacy }
-// File => logo
-// Returns => organization
-export let update_organization_privacy = async (req, res) => {
-    try {
-        let user = req.user
-        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
-            return res.status(400).json({ message: "Please provide an authenticated user", success: false })
-        }
-
-        let { privacy } = req.body
-        if (typeof privacy !== 'string' || privacy.trim() === '' || !privacy) {
-            return res.status(400).json({ message: 'Please provide a valid privacy value', success: false })
-        }
-
-        let workspace_id = req.params.workspaceid
-        if (!workspace_id || !mongoose.Types.ObjectId.isValid(workspace_id) || workspace_id === '') {
-            return res.status(400).json({ message: "Please provide a valid workspace id", success: false })
-        }
-
-        let organization_id = req.params.organizationid
-        if (!organization_id || !mongoose.Types.ObjectId.isValid(organization_id) || organization_id === '') {
-            return res.status(400).json({ message: "Please provide an valid organization id", success: false })
-        }
-
-        let user_organization_membership = await organizationMembership.findOne({ user: user?._id, workspace: workspace_id, organization: organization_id, role: { $in: ['organization_owner'] } })
-        if (!user_organization_membership) {
-            return res.status(403).json({ message: 'You are not authorized to update this organization privacy', success: false })
-        }
-
-        let updated_organization = await organizationModel.findOneAndUpdate({ _id: organization_id, workspace: workspace_id }, { privacy }, { new: true })
-        if (!updated_organization) {
-            return res.status(404).json({ message: 'Organization not found in this workspace', success: false })
-        }
-
-        return res.status(200).json({
-            message: 'Organization privacy updated successfully',
-            organization: updated_organization,
-            success: true
-        })
-
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            message: 'server error in update organization privacy api',
             success: false
         })
     }
@@ -383,7 +407,7 @@ export let send_invitation_to_user = async (req, res) => {
             user: user?._id,
             workspace: workspace_id,
             organization: organization_id,
-            role: 'organization_owner'
+            role: 'organization_admin'
         })
         if (!user_organization_membership) {
             return res.status(403).json({ message: 'You are not authorized to send invitation for this organization', success: false })
@@ -442,7 +466,7 @@ export let send_invitation_to_user = async (req, res) => {
 }
 
 
-// Get sended invitations : [GET] [organization owner route]
+// Get sended invitations : [GET] [organization admin route]
 // Full route => ..api/organization/get_sended_invitations/:workspaceid/:organizationid
 // returning => invitations
 export let get_sended_invitations = async (req, res) => {
@@ -467,7 +491,7 @@ export let get_sended_invitations = async (req, res) => {
             workspace: workspace_id,
             organization: organization_id,
             user: user?._id,
-            role: 'organization_owner'
+            role: 'organization_admin'
         })
         if (!user_membership_in_organization) {
             return res.status(403).json({ message: 'You are not authorized to get sended invitations for this organization', success: false })
@@ -494,7 +518,8 @@ export let get_sended_invitations = async (req, res) => {
     }
 }
 
-// organization owner cancel his invitation to user : [PATCH] [organization owner route]
+
+// organization admin cancel his invitation to user : [PATCH] [organization admin route]
 // Route: ../api/organization/cancel_invitation/:workspaceid/:organizationid/:invitationid
 export let cancel_invitation = async (req, res) => {
     try {
@@ -539,7 +564,7 @@ export let cancel_invitation = async (req, res) => {
         invitation.status = 'organization_canceled'
         await invitation.save()
 
-        return res.status(200).json({ message: 'Invitation canceled by organization owner', success: true })
+        return res.status(200).json({ message: 'Invitation canceled by organization owner', invitation: invitation, success: true })
     } catch (error) {
         return res.status(500).json({ message: 'server error on organization cancel invitation api', success: false })
     }
@@ -595,8 +620,7 @@ export let user_accept_organization_invitation = async (req, res) => {
 
         let invitation = await organizationInvitation.findOne({
             _id: invitation_id,
-            workspace: req.params.workspaceid,
-            invitedEmail: user.email.toLowerCase().trim(),
+            invitedEmail: user?.email.toLowerCase().trim(),
             status: 'pending_user_response',
             expiresAt: { $gt: new Date() }
         })
@@ -630,8 +654,7 @@ export let user_decline_organization_invitation = async (req, res) => {
 
         let invitation = await organizationInvitation.findOne({
             _id: invitation_id,
-            workspace: req.params.workspaceid,
-            invitedEmail: user.email.toLowerCase().trim(),
+            invitedEmail: user?.email.toLowerCase().trim(),
             status: 'pending_user_response',
             expiresAt: { $gt: new Date() }
         })
@@ -803,7 +826,7 @@ export let reject_invitation_by_workspace_owner = async (req, res) => {
 }
 
 
-// organization owner resend invitation to user : [PATCH] [organization owner route]
+// organization admin resend invitation to user : [PATCH] [organization admin route]
 // Route: ../api/organization/resend_invitation/:workspaceid/:organizationid/:invitationid
 export let resend_invitation = async (req, res) => {
     try {
@@ -836,16 +859,16 @@ export let resend_invitation = async (req, res) => {
         }).populate('workspace', 'name logo').populate('organization', 'name logo').populate('invitedBy', 'name email online')
         if (!invitation) return res.status(404).json({ message: 'Invitation not found or invalid/expired', success: false })
 
-        let org_membership = await organizationMembership.findOne({ user: user._id, workspace: invitation.workspace, organization: invitation.organization, role: 'organization_owner' })
-        if (!org_membership) {
-            return res.status(403).json({ message: 'Not authorized to resend the invitation', success: false })
+        let user_membership_in_org = await organizationMembership.findOne({ user: user?._id, workspace: workspace_id, organization: organization_id, role: 'organization_admin' })
+        if (!user_membership_in_org) {
+            return res.status(403).json({ message: 'Not authorized to resend invitation for this organization', success: false })
         }
 
         if (invitation?.status === 'pending' || invitation?.status === 'pending_workspace_approval') {
             return res.status(400).json({ message: 'Only non pending invitations can be resend', success: false })
         }
 
-        invitation.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        invitation.expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
         invitation.status = 'pending'
         await invitation.save()
 
@@ -876,7 +899,7 @@ export let user_leave_organization = async (req, res) => {
             return res.status(400).json({ message: 'Please provide a valid organization id', success: false })
         }
 
-        let org_membership = await organizationMembership.findOne({ user: user._id, workspace: workspace_id, organization: organization_id, role: 'organization_member' })
+        let org_membership = await organizationMembership.findOne({ user: user?._id, workspace: workspace_id, organization: organization_id, role: 'organization_member' })
         if (!org_membership) {
             return res.status(404).json({ message: 'Not found any organization membership', success: false })
         }
@@ -885,7 +908,7 @@ export let user_leave_organization = async (req, res) => {
             return res.status(400).json({ message: 'Organization owner cannot leave the organization', success: false })
         }
 
-        await organizationMembership.deleteOne({ user: user._id, workspace: workspace_id, organization: organization_id })
+        await organizationMembership.deleteOne({ user: user?._id, workspace: workspace_id, organization: organization_id })
 
         return res.status(200).json({ message: 'User left organization successfully', success: true })
     } catch (error) {
@@ -894,7 +917,7 @@ export let user_leave_organization = async (req, res) => {
 }
 
 
-// organization owner remove organization member : [PATCH] [organization owner route]
+// organization admin remove organization member : [PATCH] [organization admin route]
 // Route: ../api/organization/remove_member/:workspaceid/:organizationid/:memberid
 export let remove_user_from_organization = async (req, res) => {
     try {
@@ -918,7 +941,7 @@ export let remove_user_from_organization = async (req, res) => {
             return res.status(400).json({ message: 'Please provide a valid member id', success: false })
         }
 
-        let org_membership = await organizationMembership.findOne({ user: user._id, workspace: workspace_id, organization: organization_id, role: 'organization_owner' })
+        let org_membership = await organizationMembership.findOne({ user: user?._id, workspace: workspace_id, organization: organization_id, role: 'organization_owner' })
         if (!org_membership) {
             return res.status(403).json({ message: 'Not authorized to remove user from organization', success: false })
         }

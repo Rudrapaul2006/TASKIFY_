@@ -7,9 +7,17 @@ import { setAddWorkspace } from "@/Redux_Store/workspaceSlice";
 import toast from "react-hot-toast";
 import getAllWorkspace from "@/Workspace_Hooks/getAllWorkspace";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { getSocket } from "@/SocketConnection/socket";
+import Add_Organization from "@/Organization_Components/Add_Organization";
+import get_all_organization from "@/Organization_Hooks/get_all_organization";
 
 const Sidebar = () => {
+    let socket = getSocket()
+
     getAllWorkspace()
+    get_all_organization()
+
+    let { user } = useSelector(state => state.user)
 
     let dispatch = useDispatch()
     let navigate = useNavigate()
@@ -18,10 +26,22 @@ const Sidebar = () => {
 
     let [isOpen, setIsOpen] = useState(true) // for sidebar
     let [isDropdownOpen, setIsDropdownOpen] = useState(false) // for workspace
+    let [isOrgOpen, setIsOrgOpen] = useState(false) // for organization dropdown
+
+    // Reset org dropdown when user navigates
+    useEffect(() => {
+        setIsOrgOpen(false)
+    }, [location.pathname])
 
 
     let { theme } = useSelector((state) => state.theme)
     let { workspace } = useSelector((state) => state.workspace)
+    let { organization, selected_org } = useSelector((state) => state.organization)
+
+    
+    // current org
+    let current_org = organization?.find(org => org?._id === selected_org)
+    
 
     // Keep the selected workspace in memory & localStorage
     let [selectedWorkspaceId, setSelectedWorkspaceId] = useState(() =>
@@ -42,6 +62,20 @@ const Sidebar = () => {
     }, [routeWsId, workspace, selectedWorkspaceId])
 
 
+    // connect user to his workspace room :
+    useEffect(() => {
+        if (!selectedWorkspaceId || !socket) return
+
+        socket.emit("join_workspace_socket_room", selectedWorkspaceId)
+
+        return () => {
+            socket.emit("leave_workspace_socket_room", selectedWorkspaceId)
+        }
+
+    }, [selectedWorkspaceId, socket])
+
+
+    // set selected workspace id to localStorage :
     useEffect(() => {
         if (selectedWorkspaceId) {
             window.localStorage.setItem("selectedWorkspaceId", selectedWorkspaceId)
@@ -55,10 +89,9 @@ const Sidebar = () => {
     let linkBtn = `flex items-center gap-3 w-full rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-200 cursor-pointer ${dark ? "hover:bg-[#2A2A2D] hover:text-white text-slate-400" : "hover:bg-gray-200 hover:text-[#0F172A] text-slate-500"}`
 
 
-    // Derive active workspace
+    // Derive active workspace 
     let activeWs = workspace?.find((ws) => {
-        let wsData = ws?.workspace || ws
-        let wsId = wsData?._id || ws?._id
+        let wsId = ws?.workspace._id || ws?._id
 
         return wsId === selectedWorkspaceId
     }) || workspace?.[0] || null
@@ -138,7 +171,9 @@ const Sidebar = () => {
 
 
     return (
+        <>
         <div className={`relative z-[60] h-full shrink-0 transition-all duration-300 ${isOpen ? "w-35 sm:w-60 lg:w-[260px]" : "w-[35px]"}`} >
+            
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen((p) => !p)}
@@ -170,7 +205,12 @@ const Sidebar = () => {
                         <div className="relative px-2 pt-3">
                             <button
                                 type="button"
-                                onClick={() => setIsDropdownOpen((p) => !p)}
+                                onClick={() => {
+                                    setIsDropdownOpen((p) => {
+                                        if (!p) setIsOrgOpen(false)
+                                        return !p
+                                    })
+                                }}
                                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors cursor-pointer ${isDropdownOpen ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-100 text-slate-900") : (dark ? "hover:bg-[#2A2A2D] text-slate-200" : "hover:bg-gray-100 text-slate-800")}`}
                             >
                                 {activeWsData?.logo ? (
@@ -282,8 +322,11 @@ const Sidebar = () => {
 
                                 <button
                                     type="button"
-                                    onClick={() => navigate(`/workspace/home/${activeWsId}`)}
-                                    className={`${linkBtn} ${location.pathname.startsWith('/workspace/home') ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-200 text-[#172554]") : ""}`}
+                                    onClick={() => {
+                                        setIsOrgOpen(false)
+                                        navigate(`/workspace/home/${activeWsId}`)
+                                    }}
+                                    className={`${linkBtn} ${!isOrgOpen && location.pathname.startsWith('/workspace/home') ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-200 text-[#172554]") : ""}`}
                                 >
                                     <Home size={15} className="shrink-0" />
                                     <span className="whitespace-nowrap">Home</span>
@@ -291,8 +334,11 @@ const Sidebar = () => {
 
                                 <button
                                     type="button"
-                                    onClick={() => navigate(`/workspace/activity/${activeWsId}`)}
-                                    className={`${linkBtn} ${location.pathname.startsWith('/workspace/activity') ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-200 text-[#172554]") : ""}`}
+                                    onClick={() => {
+                                        setIsOrgOpen(false)
+                                        navigate(`/workspace/activity/${activeWsId}`)
+                                    }}
+                                    className={`${linkBtn} ${!isOrgOpen && location.pathname.startsWith('/workspace/activity') ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-200 text-[#172554]") : ""}`}
                                 >
                                     <Activity size={15} className="shrink-0" />
                                     <span className="whitespace-nowrap">Activity</span>
@@ -300,12 +346,20 @@ const Sidebar = () => {
 
                                 <button
                                     type="button"
-                                    onClick={() => navigate(`/workspace/members/${activeWsId}`)}
-                                    className={`${linkBtn} ${location.pathname.startsWith('/workspace/members') ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-200 text-[#172554]") : ""}`}
+                                    onClick={() => {
+                                        setIsOrgOpen(false)
+                                        navigate(`/workspace/members/${activeWsId}`)
+                                    }}
+                                    className={`${linkBtn} ${!isOrgOpen && location.pathname.startsWith('/workspace/members') ? (dark ? "bg-[#2A2A2D] text-white" : "bg-gray-200 text-[#172554]") : ""}`}
                                 >
                                     <Users size={15} className="shrink-0" />
                                     <span className="whitespace-nowrap">Members</span>
                                 </button>
+
+                                {/* Organizations */}
+                                <div className="mt-10">
+                                    <Add_Organization isOrgOpen={isOrgOpen} setIsOrgOpen={setIsOrgOpen} isWorkspaceDropdownOpen={isDropdownOpen} />
+                                </div>
                             </nav>
                         )}
                     </div>
@@ -464,6 +518,7 @@ const Sidebar = () => {
             </Dialog>
 
         </div>
+        </>
     )
 }
 

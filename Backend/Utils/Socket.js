@@ -46,7 +46,7 @@ export let connectIo = async (io) => {
 
             // console.log(chalk.green(`Tab opened: [${[...userSocketMap.get(userId)].join(", ")}] || User: ${socket.user?.name} || Tab count: ${userSocketMap.get(userId).size}`))
 
-            // personal room — sirf isi user ke sab tabs/devices ismein honge
+            // user personal room 
             await socket.join(`user_${userId}`)
 
             await userModel.findByIdAndUpdate(userId, { online: true }, { new: true })
@@ -55,7 +55,7 @@ export let connectIo = async (io) => {
 
 
         // connected online user join to his workspace room's :
-        socket.on('join_socket_room', async (workspace_id) => {
+        socket.on('join_workspace_socket_room', async (workspace_id) => {
             try {
                 if (typeof workspace_id !== 'string' || !workspace_id.trim() || !mongoose.Types.ObjectId.isValid(workspace_id)) return
 
@@ -66,7 +66,7 @@ export let connectIo = async (io) => {
                     return
                 }
 
-                // console.log(chalk.green(`User ${socket.user?.name} joined workspace room - [${membership.workspace.name}] with id - [${workspace_id}]`))
+                // console.log(chalk.green(`User ${socket.user?.name} joined workspace room - [${membership.workspace.name}] with workspace_id - [${workspace_id}]`))
 
                 await socket.join(`workspace_${workspace_id}`) // Join the workspace room
             }

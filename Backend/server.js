@@ -61,6 +61,7 @@ app.use((req, res) => {
 let port = process.env.PORT || 5000
 
 // Socket io connection :
+app.set('io', io)
 connectIo(io)
 
 server.listen(port, () => {

@@ -14,17 +14,11 @@ let userRef = {
 
 let organizationSchema = new Schema({
     name: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    logo: { type: String },
+
     workspace: workspaceRef,
-    organizationOwner: userRef,
-    organizationLeader: userRef,
-
-    privacy: {
-        type: String,
-        enum: ['private', 'public'],
-        required: true
-    },
-    logo: { type: String }
-
+    orgAdmin: userRef
 }, { timestamps: true })
 
 organizationSchema.index(
@@ -47,7 +41,7 @@ let organizationMembershipSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['organization_owner', 'organization_member', 'organization_leader'],
+        enum: ['organization_admin', 'organization_member'],
         default: 'organization_member',
         required: true
     }

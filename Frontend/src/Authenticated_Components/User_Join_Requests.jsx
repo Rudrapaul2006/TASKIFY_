@@ -7,15 +7,18 @@ import toast from 'react-hot-toast'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import User_Join_Request_History from './User_Join_Request_History'
+import { getSocket } from '@/SocketConnection/socket'
 
 const User_Join_Requests = () => {
+  let socket = getSocket() 
   
+  let {user} = useSelector(state => state.user)
+
   // activity page :
   let [activityPage, setActivityPage] = useState("")
 
   // fetch user join requests : [user side hook]
   join_requests(activityPage)
-
 
 
 
@@ -45,6 +48,18 @@ const User_Join_Requests = () => {
     return `${years} year${years > 1 ? "s" : ""} ago`
   }
 
+  // Filtered owner's declined join requests : [by socket io]
+  useEffect(() => {
+    if (socket){
+      socket.on("declined_user_join_request" , (data) => {
+        dispatch(cancel_user_join_request(data.joinrequest))
+      })
+    }
+
+    return () => {
+      socket.off("declined_user_join_request")
+    }
+  }, [socket, user?._id, dispatch]) 
 
   // Cancel join request :
   let cancel_join_request = async (workspaceId, requestId) => {

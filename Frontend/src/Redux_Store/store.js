@@ -2,11 +2,13 @@ import { configureStore } from '@reduxjs/toolkit'
 import userSlice from './userSlice'
 import themeSlice from './themeSlice'
 import workspaceSlice from './workspaceSlice'
+import organizationSlice from './organizationSlice'
 
 export let store = configureStore({
     reducer: {
         user: userSlice,
         theme: themeSlice,
-        workspace: workspaceSlice
+        workspace: workspaceSlice,
+        organization: organizationSlice
     }
 })
