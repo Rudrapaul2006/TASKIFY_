@@ -10,6 +10,10 @@ import WorkspaceHome from './WorkspaceHome'
 import WorkspaceActivity from './WorkspaceActivity'
 import { Briefcase, UserPlus, Building2, KanbanSquare, ArrowRight, ArrowDown } from "lucide-react"
 import No_workspace_home from './No_workspace_home'
+import Organization_Home from '@/Organization_Pages/Organization_Home'
+import Organization_Members from '@/Organization_Pages/Organization_Members'
+import Organization_Activity from '@/Organization_Pages/Organization_Activity'
+import Organization_Boards from '@/Organization_Pages/Organization_Boards'
 
 
 const AuthenticatedHome = () => {
@@ -34,6 +38,10 @@ const AuthenticatedHome = () => {
   let isMembersPage = location.pathname.startsWith('/workspace/members')
   let isActivityPage = location.pathname.startsWith('/workspace/activity')
 
+  let isOrgHome = location.pathname.startsWith('/organization/home')
+  let isOrgMemberspage = location.pathname.startsWith('/organization/members')
+  let isOrgActivityPage = location.pathname.startsWith('/organization/activity')
+  let isOrgBoards = location.pathname.startsWith('/organization/boards')
 
   let hasWorkspaces = Boolean(workspace && workspace.length > 0)
 
@@ -81,35 +89,33 @@ const AuthenticatedHome = () => {
 
 
         {/* Main Content Area */}
-        <main className={`flex-1 transition-all duration-300 overflow-y-auto ${theme === 'dark' ? 'bg-[#1a1a1b]' : 'bg-gray-50'} ${hasWorkspaces ? (isMembersPage ? 'px-4 sm:px-6 lg:px-8 pb-8 pt-0' : 'p-8') : ''}`}>
+        <main className={`flex-1 transition-all duration-300 ${isActivityPage ? 'h-full flex flex-col overflow-hidden px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 lg:pt-7 pb-2 sm:pb-4 lg:pb-6' : (isMembersPage ? 'overflow-y-auto px-4 sm:px-6 lg:px-8 pb-8 pt-0' : 'overflow-y-auto p-8')} ${theme === 'dark' ? 'bg-[#1a1a1b]' : 'bg-gray-50'}`}>
 
           {workspaceLoading && !hasFetchedWorkspaces ? (
 
             <div className={`h-full flex items-center justify-center ${theme === 'dark' ? 'bg-[#1a1a1be8]' : 'bg-gray-100'}`}>
-                <div className={`h-10 w-10 animate-spin rounded-full border-4 border-t-transparent ${theme === 'dark' ? 'border-blue-400' : 'border-blue-600'}`}></div>
-                <div className="text-center">
-                  <p className="font-semibold">Getting your workspace ready</p>
-                  <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-500'}`}>Loading your Taskify spaces…</p>
-                </div>
+              <div className={`h-10 w-10 animate-spin rounded-full border-4 border-t-transparent ${theme === 'dark' ? 'border-blue-400' : 'border-blue-600'}`}></div>
+              <div className="text-center">
+                <p className="font-semibold">Getting your workspace ready</p>
+                <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-500'}`}>Loading your Taskify spaces…</p>
+              </div>
             </div>
 
-          ) : !hasWorkspaces ? (
-
-            <No_workspace_home />
-
-          ) : isMembersPage ? (
-
-            <WorkspaceMembers />
-
-          ) : isActivityPage ? (
-
-            <WorkspaceActivity activeWorkspaceId={activeWorkspaceId} />
-
-          ) : (
-
-            <WorkspaceHome />
-
-          )}
+          ) : !hasWorkspaces ? (<No_workspace_home />)
+            :
+            isMembersPage ? (<WorkspaceMembers />)
+              :
+              isActivityPage ? (<WorkspaceActivity activeWorkspaceId={activeWorkspaceId} />)
+                :
+                isOrgHome ? (<Organization_Home />)
+                  :
+                  isOrgMemberspage ? (<Organization_Members />)
+                    :
+                    isOrgActivityPage ? (<Organization_Activity />)
+                      :
+                      isOrgBoards ? (<Organization_Boards />)
+                        :
+                        (<WorkspaceHome />)}
         </main>
 
       </div>

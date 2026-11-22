@@ -12,10 +12,6 @@ import Join_Request_History from './Join_Request_History'
 import { getSocket } from '@/SocketConnection/socket'
 
 const Join_Requests = () => {
-  let socket = getSocket()
-
-  let { user } = useSelector(state => state.user)
-
   let navigate = useNavigate()
   let dispatch = useDispatch()
   let param = useParams()
@@ -31,32 +27,6 @@ const Join_Requests = () => {
   let { theme } = useSelector(state => state.theme)
   let { workspace, workspace_join_request, workspace_join_request_loading, workspaceMembersCount, pending_join_request_search, pending_join_request_sort } = useSelector(state => state.workspace)
 
-
-  // set io join request data (user sned join request and resend join request) :
-  useEffect(() => {
-    if (socket) {
-      socket.on("user_join_requests", (data) => {
-        dispatch(set_workspace_join_request([data.joinrequest, ...(workspace_join_request || [])]))
-      })
-
-      return () => {
-        socket.off("user_join_requests")
-      }
-    }
-  }, [user?._id, socket, workspace_id, workspace_join_request, dispatch])
-
-  // filter user's cancel join request :
-  useEffect(() => {
-    if (socket) {
-      socket.on("canceled_join_request", (data) => {
-        dispatch(decline_join_request(data.joinrequest))
-      })
-    }
-
-    return () => {
-      socket.off("canceled_join_request")
-    }
-  }, [socket, user?._id, dispatch])
 
   let currentWorkspace = workspace.find(ws => ws?.workspace?._id === workspace_id)
   let isOwner = currentWorkspace?.role === 'workspace_owner'
@@ -157,7 +127,7 @@ const Join_Requests = () => {
             </div>
           )}
 
-          <hr className={`mb-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+          <hr className={`mb-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
 
           {/* searching and sorting */}
           {(isOwner || isMember) && (
@@ -176,7 +146,7 @@ const Join_Requests = () => {
                   }}
                   placeholder="Search name or email"
                   className={`h-10 w-full rounded-xl border pr-3 pl-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 
-                    ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                    ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
                 />
               </div>
 
@@ -187,7 +157,7 @@ const Join_Requests = () => {
                     dispatch(set_pending_join_request_search(""))
                     dispatch(set_pending_join_request_sort(e.target.value))
                   }}
-                  className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`}
+                  className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`}
                 >
                   <option value="">Sort</option>
                   <option value="newest">Newest</option>
@@ -197,7 +167,7 @@ const Join_Requests = () => {
             </div>
           )}
 
-          <hr className={`mt-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+          <hr className={`mt-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
         </div>
       )}
 
@@ -217,20 +187,27 @@ const Join_Requests = () => {
           <div className='w-full flex items-center justify-center'>
             <div className={`mt-12 h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
           </div>
-        ) : workspace_join_request?.length > 0 ? (
-          workspace_join_request?.map(i => (
+        ) : workspace_join_request?.length > 0 ? ( workspace_join_request?.map(i => (
             <main key={i?._id || i?.id}>
               <div
-                className={`flex flex-col justify-between gap-4 border-b px-2 py-4 last:border-b-0 sm:flex-row sm:items-center sm:px-1 
-                  ${theme === "dark" ? "border-slate-700 bg-[#1a1a1b] text-white" : "border-slate-200 bg-white text-slate-900"}`}
+                className={`mt-2 flex flex-col justify-between gap-4 rounded-lg border px-3 py-4 sm:flex-row sm:items-center sm:px-4
+                  ${theme === "dark" ? "border-white/10 bg-transparent text-white" : "border-slate-200 bg-white text-slate-900"}`}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    aria-hidden="true"
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-semibold uppercase text-white ring-2 ${theme === "dark" ? "ring-slate-700" : "ring-slate-100"}`}
-                  >
-                    {(i?.user?.name || "Null").trim().charAt(0)}
-                  </div>
+                  {i?.user?.avatar ? (
+                    <img
+                      src={i.user.avatar}
+                      alt={i?.user?.name || "User"}
+                      className={`h-10 w-10 shrink-0 rounded-full object-cover ring-2 ${theme === "dark" ? "ring-slate-700" : "ring-slate-100"}`}
+                    />
+                  ) : (
+                    <div
+                      aria-hidden="true"
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-semibold uppercase text-white ring-2 ${theme === "dark" ? "ring-slate-700" : "ring-slate-100"}`}
+                    >
+                      {(i?.user?.name || i?.user?.email || "U").trim().charAt(0).toUpperCase()}
+                    </div>
+                  )}
 
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">
@@ -283,8 +260,6 @@ const Join_Requests = () => {
                 }
 
               </div>
-
-              <hr className={`border-0 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
             </main>
           ))
         ) : (

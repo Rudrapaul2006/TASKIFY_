@@ -18,6 +18,7 @@ let optionalUserRef = {
 let workspaceSchema = new Schema({
     name: { type: String, required: true, trim: true },
     logo: { type: String },
+    description: { type: String },
     workspaceOwner: userRef, // The user who create workspace [access the workspace]
 
     findCode: {
@@ -143,3 +144,18 @@ joiningRequestInWorkspaceSchema.index(
 )
 
 export let workspaceJoinRequest = model("workspaceJoinRequest", joiningRequestInWorkspaceSchema)
+
+
+// workspace activity :
+let workspaceActivitySchema = new Schema({
+    workspace: { type: mongoose.Schema.Types.ObjectId, ref: "workspace", required: true, index: true },
+    actor: optionalUserRef,
+    targetUser: optionalUserRef,
+
+    type: { type: String, required: true }, // like - invitation/ join request/ member joined
+    meta: { type: Object, default: {} }, // data
+
+    visibility: { type: String, enum: ['workspace_owner', 'workspace_member'], default: 'workspace_member' },
+}, {timestamps: true})
+
+export let workspaceActivity = model('workspaceActivity', workspaceActivitySchema)

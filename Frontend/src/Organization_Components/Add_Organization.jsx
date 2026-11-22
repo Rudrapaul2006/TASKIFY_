@@ -5,25 +5,20 @@ import { MdOutlineArrowDropDownCircle } from "react-icons/md"
 import { useDispatch, useSelector } from 'react-redux'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Add_Organization as addOrgToStore, selected_org_id } from '@/Redux_Store/organizationSlice'
-import useGetAllOrganization from '@/Organization_Hooks/get_all_organization'
-import get_all_organization from '@/Organization_Hooks/get_all_organization'
+import { add_organization, set_organization_loading, set_selected_org } from '@/Redux_Store/organizationSlice'
 
 const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
-    get_all_organization()
-
     let dispatch = useDispatch()
 
     let { theme } = useSelector(state => state.theme)
     let dark = theme === "dark"
 
     let { user } = useSelector(state => state.user)
-    let { workspace } = useSelector(state => state.workspace)
+    let { workspace, selected_workspace } = useSelector((state) => state.workspace)
     let { organization, selected_org } = useSelector(state => state.organization)
 
-
-    let workspace_id = localStorage.getItem("selectedWorkspaceId")
-    let current_workspace = workspace?.find(ws => ws?.workspace?._id === workspace_id) || workspace?.[0]
+    let workspace_id = selected_workspace 
+    let current_workspace = workspace?.find(ws => (ws?.workspace?._id || ws?._id) === workspace_id) || workspace?.[0]
     let isOwner = current_workspace?.role === "workspace_owner"
 
 
@@ -35,9 +30,20 @@ const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
     let [isDialogOpen, setIsDialogOpen] = useState(false)
 
 
-    // current organization :
+    // current org 
     let current_org = organization?.find(org => org?._id === selected_org)
     let current_org_id = current_org?._id
+
+    let resetForm = () => {
+        if (searchTimer) clearTimeout(searchTimer)
+        setName('')
+        setDescription('')
+        setAdmin('')
+        setLogo(null)
+        setMember([])
+        setShowMemberDropdown(false)
+        setSearchingMember(false)
+    }
 
 
     // Create Organization
@@ -72,10 +78,10 @@ const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
 
             if (res.data.success) {
                 toast.success(res.data.message)
-                dispatch(addOrgToStore(res.data.organization))
+                dispatch(add_organization(res.data.organization))
 
                 // set the selected organization
-                dispatch(selected_org_id(res.data.organization?._id))
+                dispatch(set_selected_org(res.data.organization?._id))
 
                 // close the dialog box
                 setIsDialogOpen(false)
@@ -104,16 +110,7 @@ const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
     let [searchingMember, setSearchingMember] = useState(false)
     let [searchTimer, setSearchTimer] = useState(null)
 
-    let resetForm = () => {
-        if (searchTimer) clearTimeout(searchTimer)
-        setName('')
-        setDescription('')
-        setAdmin('')
-        setLogo(null)
-        setMember([])
-        setShowMemberDropdown(false)
-        setSearchingMember(false)
-    }
+
 
     // Reset when dialog box is closed
     useEffect(() => {
@@ -187,7 +184,7 @@ const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
                 />
             )}
 
-            <div className={`relative ${isWorkspaceDropdownOpen ? "z-10 pointer-events-none" : "z-20"} pb-2.5 border-b ${dark ? "border-[#353537]" : "border-slate-200"}`}>
+            <div className={`mt-5 relative ${isWorkspaceDropdownOpen ? "z-10 pointer-events-none" : "z-20"} pb-2.5 border-b ${dark ? "border-[#353537]" : "border-slate-200"}`}>
                 <div
                     onClick={() => {
                         if (isWorkspaceDropdownOpen) return
@@ -207,8 +204,8 @@ const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
                 </div>
 
                 <div
-                    className={`absolute left-0 right-0 top-full z-30 -mt-1.5 flex flex-col rounded-md border p-1 shadow-lg transition-all duration-200 ease-in-out origin-top ${orgDropDown ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-                        } ${dark ? "border-[#353537] bg-[#252528] text-slate-100" : "border-slate-200 bg-white text-slate-800 shadow-sm"}`}
+                    className={`absolute left-0 right-0 top-full z-30 -mt-1.5 flex flex-col rounded-md border p-1 shadow-lg transition-all duration-200 ease-in-out origin-top ${orgDropDown ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-2 pointer-events-none" } 
+                    ${dark ? "border-[#353537] bg-[#252528] text-slate-100" : "border-slate-200 bg-white text-slate-800 shadow-sm"}`}
                 >
                     {organization.length === 0 ? (
                         <div className={`text-xs flex items-center justify-center py-2.5 ${isOwner ? "border-b" : "border-none"} ${dark ? "border-[#39393a] text-slate-400" : "border-slate-200 text-slate-500"}`}>
@@ -220,11 +217,14 @@ const Add_Organization = ({ isWorkspaceDropdownOpen }) => {
                                 <div
                                     key={org?._id || org?.id || org?.name}
                                     onClick={() => {
-                                        dispatch(selected_org_id(org?._id))
+                                        dispatch(set_selected_org(org?._id)) // selected org id will stored in localstorage
+                                        dispatch(set_organization_loading(true))
+                                        setTimeout(() => {dispatch(set_organization_loading(false))}, 500)
+
                                         setOrgDropDown(false)
                                     }}
                                     className={`flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-all duration-200 ${dark ? "hover:bg-[#2a2a2d]" : "hover:bg-slate-100"} ${current_org_id === org?._id
-                                        ? dark ? "bg-[#2a2a2d] text-white shadow-sm" : "bg-slate-100 text-slate-900 shadow-sm" : dark ? "text-slate-100" : "text-slate-800" } ${current_org_id === org?._id ? "font-semibold" : "font-medium"}`}
+                                        ? dark ? "bg-[#2a2a2d] text-white shadow-sm" : "bg-slate-100 text-slate-900 shadow-sm" : dark ? "text-slate-100" : "text-slate-800"} ${current_org_id === org?._id ? "font-semibold" : "font-medium"}`}
                                 >
                                     <div className="flex min-w-0 items-center gap-3">
                                         <div className='h-7 w-7 min-w-7 overflow-hidden rounded-full bg-green-500 flex items-center justify-center ring-1 ring-black/5'>

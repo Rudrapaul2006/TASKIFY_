@@ -10,9 +10,9 @@ import User_Join_Request_History from './User_Join_Request_History'
 import { getSocket } from '@/SocketConnection/socket'
 
 const User_Join_Requests = () => {
-  let socket = getSocket() 
-  
-  let {user} = useSelector(state => state.user)
+  let socket = getSocket()
+
+  let { user } = useSelector(state => state.user)
 
   // activity page :
   let [activityPage, setActivityPage] = useState("")
@@ -50,8 +50,8 @@ const User_Join_Requests = () => {
 
   // Filtered owner's declined join requests : [by socket io]
   useEffect(() => {
-    if (socket){
-      socket.on("declined_user_join_request" , (data) => {
+    if (socket) {
+      socket.on("declined_user_join_request", (data) => {
         dispatch(cancel_user_join_request(data.joinrequest))
       })
     }
@@ -59,7 +59,7 @@ const User_Join_Requests = () => {
     return () => {
       socket.off("declined_user_join_request")
     }
-  }, [socket, user?._id, dispatch]) 
+  }, [socket, user?._id, dispatch])
 
   // Cancel join request :
   let cancel_join_request = async (workspaceId, requestId) => {
@@ -94,7 +94,7 @@ const User_Join_Requests = () => {
   return (
     <>
       <div className="w-full">
-        
+
         {activityPage === "" && (
           <div className={`sticky top-0 z-30  pb-2 ${theme === "dark" ? "bg-[#18181a]" : "bg-gray-50"}`}>
 
@@ -160,11 +160,11 @@ const User_Join_Requests = () => {
             <div className="flex w-full items-center justify-center py-12" role="status" aria-label="Loading join requests">
               <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
             </div>
-          ) : user_join_requests?.length > 0 ? (user_join_requests.map((i) => (
+          ) : user_join_requests?.length > 0 ? (user_join_requests?.map((i) => (
 
             <main key={i?._id || i?.id}>
               <div
-                className={`flex flex-col justify-between gap-4 border-b px-2 py-4 last:border-b-0 sm:flex-row sm:items-center sm:px-3 ${theme === "dark" ? "border-slate-700 bg-[#18181a] text-white" : "border-slate-200 bg-white text-slate-900"}`}
+                className={`mt-2 flex flex-col justify-between gap-4 rounded-md border px-3 py-4 sm:flex-row sm:items-center ${theme === "dark" ? "border-white/10 bg-transparent text-white" : "border-slate-200 bg-white text-slate-900"}`}
               >
                 {/* Workspace Info */}
                 <div className="flex min-w-0 items-center gap-3">
@@ -225,8 +225,6 @@ const User_Join_Requests = () => {
                   </div>
                 </div>
               </div>
-
-              <hr className={`border-0 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
             </main>
           ))
           ) : (
@@ -239,7 +237,7 @@ const User_Join_Requests = () => {
 
 
       {
-        activityPage === "activity" && <User_Join_Request_History  onClear={() => setActivityPage("")} />
+        activityPage === "activity" && <User_Join_Request_History onClear={() => setActivityPage("")} />
       }
     </>
   )

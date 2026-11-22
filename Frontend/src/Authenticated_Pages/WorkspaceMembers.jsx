@@ -1,7 +1,9 @@
-﻿import Join_Requests from "@/Authenticated_Components/Join_Requests"
+import Join_Requests from "@/Authenticated_Components/Join_Requests"
 import Sended_Invtations from "@/Authenticated_Components/Sended_Invtations"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/Components/ui/dialog"
-import { set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_workspace_member_search, set_workspace_member_sorting, setWorkspaceMembers, setWorkspaceMembersCount, setWorkspaceMembersLoading } from "@/Redux_Store/workspaceSlice"
+import { cancel_user_join_request, decline_join_request, set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_workspace_join_request, set_workspace_member_search, set_workspace_member_sorting, setWorkspaceMembers, setWorkspaceMembersCount, setWorkspaceMembersLoading } from "@/Redux_Store/workspaceSlice"
+import { getSocket } from "@/SocketConnection/socket"
+import get_all_join_request from "@/Workspace_Hooks/get_all_join_request"
 import get_all_members from "@/Workspace_Hooks/get_all_members"
 import { Input } from "@base-ui/react"
 import axios from "axios"
@@ -12,12 +14,13 @@ import { useDispatch, useSelector } from "react-redux"
 import { useNavigate, useParams } from "react-router-dom"
 
 const WorkspaceMembers = () => {
+  let socket = getSocket()
   let dispatch = useDispatch()
   let navigate = useNavigate()
 
+  let { user } = useSelector(state => state.user)
   let { theme } = useSelector(state => state.theme)
-  let { workspace, workspaceMembersCount, workspaceMembers, workspaceMembersLoading, workspace_member_search, workspace_member_sorting } = useSelector(state => state.workspace)
-
+  let { workspace_join_request, workspace, workspaceMembersCount, workspaceMembers, workspaceMembersLoading, workspace_member_search, workspace_member_sorting } = useSelector(state => state.workspace)
 
   let params = useParams()
   let workspace_id = params.id
@@ -28,7 +31,7 @@ const WorkspaceMembers = () => {
   let isMember = currentWorkspace?.role === 'workspace_member'
 
 
-  // Persist the selected tab per workspace so refresh keeps the same view 
+  // Persist the selected tab per workspace so refresh keeps the same view
   let tabStorageKey = `workspace_tab:${workspace_id}`
   let validTabs = ["members", "invitation", "joinRequest"]
 
@@ -57,7 +60,34 @@ const WorkspaceMembers = () => {
 
   // Get Members of each Workspace [hook]
   get_all_members(workspace_id, activeTab)
+  get_all_join_request(workspace_id)
+
+  // // fetch real time user's join req
+  useEffect(() => {
+    if (socket) {
+      socket.on("user_join_requests", (data) => {
+        dispatch(set_workspace_join_request([data.joinrequest, ...(workspace_join_request || [])]))
+      })
+
+      return () => {
+        socket.off("user_join_requests")
+      }
+    }
+  }, [user?._id, socket, workspace_id, workspace_join_request, dispatch])
+
+  // filter user's cancel join request :
+    useEffect(() => {
+      if (socket) {
+        socket.on("canceled_join_request", (data) => {
+          dispatch(decline_join_request(data.joinrequest))
+        })
+      }
   
+      return () => {
+        socket.off("canceled_join_request")
+      }
+    }, [socket, user?._id, dispatch])
+
 
   // send invitation to user :
   let [invitedEmail, setInvitedEmail] = useState('')
@@ -122,15 +152,15 @@ const WorkspaceMembers = () => {
               <Dialog open={invitationDialogOpen} onOpenChange={(open) => { setInvitationDialogOpen(open); if (!open) setInvitedEmail("") }}>
                 <DialogTrigger>
                   <button
-                      className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-1.5 shadow-xs transition-all duration-300 hover:shadow-sm active:scale-[0.98]
-                      ${theme === "dark" ? "border-slate-600 text-white hover:bg-[#2A2A2D] hover:border-slate-400" : "border-slate-400 text-slate-900 hover:bg-slate-100 hover:border-slate-600"}`}
+                    className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-1.5 shadow-xs transition-all duration-300 hover:shadow-sm active:scale-[0.98]
+                      ${theme === "dark" ? "border-white/10 text-white hover:bg-[#2A2A2D] hover:border-white/20" : "border-slate-400 text-slate-900 hover:bg-slate-100 hover:border-slate-600"}`}
                   >
                     <UserPlus size={16} />
                     <span className="hidden md:block lg:block text-sm font-medium">Invite Member</span>
                   </button>
                 </DialogTrigger>
 
-                <DialogContent className={`sm:max-w-md ${theme === "dark" ? "border-slate-700 bg-[#1E1E20] text-white" : "border-slate-200 bg-white text-slate-900"}`}>
+                <DialogContent className={`sm:max-w-md ${theme === "dark" ? "border-white/10 bg-[#1E1E20] text-white" : "border-slate-200 bg-white text-slate-900"}`}>
                   <DialogHeader>
                     <DialogTitle className={theme === "dark" ? "text-white" : "text-slate-900"}>Invite member</DialogTitle>
 
@@ -147,7 +177,7 @@ const WorkspaceMembers = () => {
                       value={invitedEmail}
                       onChange={(e) => setInvitedEmail(e.target.value)}
                       placeholder="user_email@gmail.com"
-                      className={`rounded-md border px-3 py-2 outline-none focus:ring focus:ring-blue-500 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-400 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                      className={`rounded-md border px-3 py-2 outline-none focus:ring focus:ring-blue-500 ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-400 bg-white text-slate-900 placeholder:text-slate-500"}`}
                     />
                   </div>
 
@@ -155,7 +185,7 @@ const WorkspaceMembers = () => {
                     <DialogClose>
                       <button onClick={() => setInvitedEmail("")} type="button"
                         className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors 
-                          ${theme === "dark" ? "border-slate-600 bg-transparent text-white hover:bg-[#2A2A2D]" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                          ${theme === "dark" ? "border-white/10 bg-transparent text-white hover:bg-[#2A2A2D]" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
                       >
                         Cancel
                       </button>
@@ -183,7 +213,7 @@ const WorkspaceMembers = () => {
           {!isOwner && isMember && (
             <div>
               <button className={`py-1.5 px-3 flex gap-2 items-center justify-center rounded-xl border shadow-xs transition-all hover:shadow-sm active:scale-[0.98] duration-300 cursor-pointer
-                ${theme === "dark" ? "border-slate-600 text-white hover:bg-[#2A2A2D] hover:border-slate-400" : "border-slate-400 text-slate-900 hover:bg-slate-100 hover:border-slate-600"}`}>
+                ${theme === "dark" ? "border-white/10 text-white hover:bg-[#2A2A2D] hover:border-white/20" : "border-slate-400 text-slate-900 hover:bg-slate-100 hover:border-slate-600"}`}>
                 <LogOut className="mt-0.5 text-red-500" size={16} />
                 <span className="text-sm font-medium">Leave workspace</span>
               </button>
@@ -221,7 +251,7 @@ const WorkspaceMembers = () => {
                   className={`h-full flex items-center whitespace-nowrap transition-colors duration-150 ${activeTab === 'joinRequest' ? "font-semibold text-blue-500" : theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-800"}`}
                   onClick={() => changeActiveTab('joinRequest')}
                 >
-                  Join Requests
+                  Join Requests {workspace_join_request?.length > 0 && <span className="text-yellow-500 ml-1">({workspace_join_request.length})</span>}
                 </button>
                 {activeTab === 'joinRequest' && <span className={`absolute bottom-0 left-0 h-0.5 w-full ${theme === "dark" ? "bg-blue-500" : "bg-blue-600"}`} />}
               </div>
@@ -229,7 +259,7 @@ const WorkspaceMembers = () => {
           )}
         </div>
 
-        <hr className={`w-full border-t-2 -mt-0.5 ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`} />
+        <hr className={`w-full border-t -mt-0.5 ${theme === "dark" ? "border-white/10" : "border-slate-300"}`} />
       </div>
 
 
@@ -255,7 +285,7 @@ const WorkspaceMembers = () => {
                     }}
                     placeholder="Search name or email"
                     className={`h-10 w-full rounded-xl border pr-3 pl-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 
-                      ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                      ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
                   />
                 </div>
 
@@ -267,7 +297,7 @@ const WorkspaceMembers = () => {
                       dispatch(set_workspace_member_sorting(e.target.value))
                     }}
                     name="sort" defaultValue="" className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 
-                    ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`} >
+                    ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`} >
                     <option value="">Sort</option>
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
@@ -277,7 +307,7 @@ const WorkspaceMembers = () => {
                 </div>
               </div>
 
-              <hr className={`mt-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+              <hr className={`mt-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
             </div>
           )}
 
@@ -288,7 +318,7 @@ const WorkspaceMembers = () => {
                 <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
               </div>
             ) : (
-              <div className={`overflow-auto rounded-lg border ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`}>
+              <div className={`overflow-auto rounded-lg border ${theme === "dark" ? "border-white/10" : "border-slate-300"}`}>
                 <table className="w-full min-w-[480px] text-left">
 
                   <thead className={`sticky top-0 z-10 ${theme === "dark" ? "bg-[#2A2A2D] text-slate-200" : "bg-slate-50 text-slate-700"}`}>
@@ -304,7 +334,7 @@ const WorkspaceMembers = () => {
 
                   <tbody>
                     {workspaceMembers?.length > 0 ? workspaceMembers?.map((wsMem) => (
-                      <tr key={wsMem?._id} className={`border-t ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`}>
+                      <tr key={wsMem?._id} className={`border-t ${theme === "dark" ? "border-white/10" : "border-slate-300"}`}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-600 bg-green-500 text-sm font-semibold text-white">
@@ -329,14 +359,14 @@ const WorkspaceMembers = () => {
 
                         {
                           <td className="px-4 py-3">
-                            <button onClick={() => navigate(`/workspace/member_profile/${workspace_id}/${wsMem?.user?._id.toString()}`)} className={`px-3 py-1 bg-transparent  border rounded-xl cursor-pointer  ${theme === "dark" ? "border-slate-600 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 hover:underline hover:bg-gray-100 duration-200 text-slate-700"}`}>View</button>
+                            <button onClick={() => navigate(`/workspace/member_profile/${workspace_id}/${wsMem?.user?._id.toString()}`)} className={`px-3 py-1 bg-transparent  border rounded-xl cursor-pointer  ${theme === "dark" ? "border-white/10 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 hover:underline hover:bg-gray-100 duration-200 text-slate-700"}`}>View</button>
                           </td>
                         }
 
                         {isOwner && (
                           <td className="px-4 py-3">
                             {wsMem?.role !== 'workspace_owner' && (
-                              <div className={`cursor-pointer inline-flex items-center gap-2 rounded-lg border px-5 py-1.5 text-sm duration-300 active:scale-[0.98] ${theme === "dark" ? "border-slate-600 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 hover:bg-gray-200 duration-200 text-slate-700"}`}>
+                              <div className={`cursor-pointer inline-flex items-center gap-2 rounded-lg border px-5 py-1.5 text-sm duration-300 active:scale-[0.98] ${theme === "dark" ? "border-white/10 text-slate-200 hover:bg-[#2A2A2D] " : "border-slate-300 hover:bg-gray-200 duration-200 text-slate-700"}`}>
                                 <X className="mt-0.5" color="red" size={18} />
                                 <span>Remove</span>
                               </div>
@@ -345,7 +375,7 @@ const WorkspaceMembers = () => {
                         )}
                       </tr>
                     )) : (
-                      <tr className={`border-t ${theme === "dark" ? "border-slate-700" : "border-slate-300"}`}>
+                      <tr className={`border-t ${theme === "dark" ? "border-white/10" : "border-slate-300"}`}>
                         <td colSpan={isOwner ? 4 : 3} className="px-4 py-6 text-center text-sm">
                           No members found
                         </td>

@@ -15,7 +15,8 @@ import {
     admin_side_type_join_request,
     get_workspace_data_by_id,
     get_user_type_join_request,
-    resend_join_request
+    resend_join_request,
+    get_workspace_activity
 } from '../Controllers/workspace.controller.js'
 
 // import { checkWorkspaceMember, checkWorkspaceOwner } from '../Middleweres/WorkspaceAccess.js' 
@@ -31,6 +32,10 @@ WorkspaceRouter.get("/getall", protection, get_all_workspace)
 WorkspaceRouter.get("/get/:workspaceid", protection, get_workspace_by_id)
 WorkspaceRouter.put("/update/:workspaceid", protection, upload.single("logo"), update_workspace)
 WorkspaceRouter.patch("/update_privacy/:workspaceid", protection, update_workspace_privacy)
+
+
+// get workspace activities :
+WorkspaceRouter.get("/activity/:workspaceid", protection, get_workspace_activity)
 
 
 // Change user role in workspace :

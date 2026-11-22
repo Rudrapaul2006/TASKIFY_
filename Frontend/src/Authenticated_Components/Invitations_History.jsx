@@ -1,4 +1,4 @@
-﻿import { set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_type_invitation, set_type_invitation_search, set_type_invitation_sorting, set_workspace_invitations_loading, set_workspace_type_invitations, set_workspace_type_invitations_loading } from '@/Redux_Store/workspaceSlice'
+import { set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_type_invitation, set_type_invitation_search, set_type_invitation_sorting, set_workspace_invitations_loading, set_workspace_type_invitations, set_workspace_type_invitations_loading } from '@/Redux_Store/workspaceSlice'
 import { get_all_type_invitations } from '@/Workspace_Hooks/get_all_type_invitations'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -54,7 +54,7 @@ const Invitation_History = ({ onClear }) => {
 
     let chipBase = "cursor-pointer rounded-xl border px-4 py-1 text-sm font-medium transition-all duration-200 shrink-0 inline-flex items-center justify-center"
     let chipActive = "border-blue-500 text-blue-500 bg-blue-500/20"
-    let activity_css = `px-2 py-1 flex h-auto lg:h-13 w-24 shrink-0 flex-col items-start justify-center rounded-lg border text-left text-xs font-semibold ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-slate-200" : "border-slate-200 bg-white text-slate-700"}`
+    let activity_css = `px-2 py-1 flex h-auto lg:h-13 w-24 shrink-0 flex-col items-start justify-center rounded-lg border text-left text-xs font-semibold ${theme === "dark" ? "border-white/10 bg-transparent text-slate-200" : "border-slate-200 bg-white text-slate-700"}`
 
 
     // navigate search and soring in url :
@@ -101,7 +101,7 @@ const Invitation_History = ({ onClear }) => {
                     </div>
                 )}
 
-                <hr className={`mb-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+                <hr className={`mb-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
 
                 {/* search and sorting */}
                 {(isOwner || isMember) && (
@@ -123,7 +123,7 @@ const Invitation_History = ({ onClear }) => {
                                 }}
                                 placeholder="Search name or email"
                                 className={`h-10 w-full rounded-xl border pr-3 pl-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 
-                                    ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                                    ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
                             />
                         </div>
 
@@ -138,7 +138,7 @@ const Invitation_History = ({ onClear }) => {
                                         dispatch(set_type_invitation(e.target.value))
                                         dispatch(set_type_invitation_sorting(''))
                                     }}
-                                    className={`h-10 w-full cursor-pointer appearance-none rounded-xl border py-2 pr-9 pl-9 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 lg:w-40 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white" : "border-slate-300 bg-white text-slate-900"
+                                    className={`h-10 w-full cursor-pointer appearance-none rounded-xl border py-2 pr-9 pl-9 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 lg:w-40 ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white" : "border-slate-300 bg-white text-slate-900"
                                         }`}
                                 >
                                     <option value="">All types</option>
@@ -158,13 +158,13 @@ const Invitation_History = ({ onClear }) => {
                                         dispatch(set_type_invitation_sorting(e.target.value))
                                         dispatch(set_type_invitation(''))
                                     }}
-                                    className={`h-10 w-full cursor-pointer appearance-none rounded-xl border py-2 pr-9 pl-8 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 lg:w-40 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white" : "border-slate-300 bg-white text-slate-900"
+                                    className={`h-10 w-full cursor-pointer appearance-none rounded-xl border py-2 pr-9 pl-8 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 lg:w-40 ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white" : "border-slate-300 bg-white text-slate-900"
                                         }`}>
                                     <option value="">Sort</option>
                                     <option value="newest">Newest first</option>
                                     <option value="oldest">Oldest first</option>
                                     <option value="dmc">Most cancelled</option>
-                                    <option value="dme">Most cxpired</option>
+                                    <option value="dme">Most expired</option>
                                 </select>
                                 <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-slate-400" />
                             </div>
@@ -174,7 +174,7 @@ const Invitation_History = ({ onClear }) => {
                     </div>
                 )}
 
-                <hr className={`mt-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+                <hr className={`mt-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
             </div>
 
 
@@ -182,14 +182,14 @@ const Invitation_History = ({ onClear }) => {
                 <div className="flex justify-center py-10" role="status" aria-label="Loading invitations">
                     <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
                 </div>
-            ) : workspace_type_invitations && workspace_type_invitations.length > 0 ? (
+            ) : workspace_type_invitations && workspace_type_invitations?.length > 0 ? (
 
-                workspace_type_invitations.map((i) => {
+                workspace_type_invitations?.map((i) => {
                     return (
                         <div key={i?.invitedEmail || i?.latest?._id}>
                             <div
-                                className={`flex flex-col gap-4 border-b px-3 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6
-                                 ${theme === "dark" ? "border-slate-700 bg-[#1a1a1b] text-white" : "border-slate-200 bg-white text-slate-900"}`}
+                                className={`mt-3 flex flex-col gap-4 rounded-md border px-3 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6
+                                    ${theme === "dark" ? "border-white/10 bg-transparent text-white" : "border-slate-200 bg-white text-slate-900"}`}
                             >
 
                                 <div className="flex min-w-0 flex-1 items-center gap-3">

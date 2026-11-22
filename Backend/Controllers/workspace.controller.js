@@ -1,10 +1,70 @@
 import mongoose, { mongo } from "mongoose";
 import userModel from "../Models/user.model.js";
-import { workspaceInvitation, workspaceJoinRequest, workspaceMemberShip, workspaceModel } from "../Models/workspace.model.js";
+import { workspaceActivity, workspaceInvitation, workspaceJoinRequest, workspaceMemberShip, workspaceModel } from "../Models/workspace.model.js";
 import { uploadImageOnCloudinary } from "../Utils/Cloudinary.js";
 import crypto from 'crypto'
 import { redisClient } from "../Utils/RedisClint.js";
 import { organizationMembership } from "../Models/organization.model.js";
+
+
+
+// workspace activity helper :
+export let workspace_activity = async (data) => {
+    try {
+        let activity = await workspaceActivity.create(data)
+        return activity
+    } catch (error) {
+        console.log("Error creating workspace activity:", error);
+        return null
+    }
+}
+
+
+// get workspace activity : [user / owner]
+export let get_workspace_activity = async (req, res) => {
+    try {
+        let user = req.user
+        if (!user || !mongoose.Types.ObjectId.isValid(user?._id)) {
+            return res.status(400).json({
+                messgage: 'Please provide a valid user id',
+                success: false
+            })
+        }
+
+        let workspace_id = req.params.workspaceid
+        if (!workspace_id || !mongoose.Types.ObjectId.isValid(workspace_id)) {
+            return res.status(400).json({
+                messgage: 'Please provide a valid workspace id',
+                success: false
+            })
+        }
+
+        let user_membership_in_workspace = await workspaceMemberShip.findOne({ workspace: workspace_id, user: user?._id })
+        if (!user_membership_in_workspace) {
+            return res.status(401).json({
+                message: 'User is not a member of this workspace'
+            })
+        }
+
+        let activities = await workspaceActivity.find({
+            workspace: workspace_id,
+            createdAt: { $gte: user_membership_in_workspace.createdAt },
+            visibility: user_membership_in_workspace.role === 'workspace_owner' ? { $in: ['workspace_member', 'workspace_owner'] } : 'workspace_member'
+        }).sort({createdAt: -1}).populate('actor targetUser', 'name email avatar')
+
+        return res.status(200).json({
+            success: true,
+            activities: activities || []
+        })
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: 'Something error in get workspace activity',
+            success: false
+        })
+    }
+}
 
 
 
@@ -23,7 +83,7 @@ export let create_workspace = async (req, res) => {
             })
         }
 
-        let { workspace_name, privacy } = req.body
+        let { workspace_name, description, privacy } = req.body
         if (!workspace_name || typeof workspace_name !== 'string' || workspace_name.trim() === '') {
             return res.status(400).json({ message: "Please provide a valid workspace name", success: false })
         }
@@ -59,7 +119,9 @@ export let create_workspace = async (req, res) => {
         let workspace = await workspaceModel.create({
             workspaceOwner: user?._id,
             name: workspace_name,
-            logo
+            description: description,
+            logo,
+            privacy: privacy || 'public'
         })
 
         if (!workspace) { return res.status(400).json({ message: "Cant create a workspace", success: false }) }
@@ -71,7 +133,7 @@ export let create_workspace = async (req, res) => {
         })
 
         let createdWorkspace = await membershipOfWorkspace.populate(["user", "workspace"])
-
+        
         // Redis cache:
         let user_Workspaces_Key = `user:${user?._id}:workspaces` // for multiple workspace list [user / member's / owner]
         let user_single_Workspace_Key = `user:${user?._id}:workspace:${workspace?._id}` // for single workspace details [user / member's / owner]
@@ -79,6 +141,10 @@ export let create_workspace = async (req, res) => {
         // the next GET /getall call re-fetches a fresh, complete list from DB
         await redisClient.del(user_Workspaces_Key)
         await redisClient.del(user_single_Workspace_Key)
+
+
+        // create activity :
+        await workspace_activity({ workspace: workspace?._id, actor: workspace?.workspaceOwner , type: `create ${workspace?.name} workspace` , visibility: 'workspace_owner' })
 
         return res.status(200).json({
             message: "Workspace created successfully",
@@ -191,7 +257,7 @@ export let get_workspace_by_id = async (req, res) => {
 
         // If not cached, fetch from DB and cache it
 
-        let workspace = await workspaceMemberShip.find({ user: user?._id, workspace: workspace_id }).populate("user").populate("workspace")
+        let workspace = await workspaceMemberShip.find({ user: user?._id, workspace: workspace_id }).populate("workspace")
             .populate({
                 path: "workspace",
                 populate: {
@@ -224,7 +290,7 @@ export let get_workspace_by_id = async (req, res) => {
 
 // Update workspace [name and logo] : [put request] [owner route]
 // Full route : ../api/workspace/update/:workspaceid
-// {updated_workspace_name} from body
+// {name} from body
 // {logo} from file
 // Returning => updatedWorkspace
 export let update_workspace = async (req, res) => {
@@ -245,14 +311,19 @@ export let update_workspace = async (req, res) => {
             })
         }
 
-        let { updated_workspace_name } = req.body
-        if (!updated_workspace_name || typeof updated_workspace_name !== 'string' || updated_workspace_name.trim() === '') {
+        let { name, description } = req.body
+
+        if (!name || typeof name !== 'string' || name.trim() === '') {
             return res.status(400).json({
                 message: "Plesase provide a valid name",
                 success: false
             })
         }
-        updated_workspace_name = updated_workspace_name.trim()
+
+        name = name.trim()
+        if (description !== undefined && description !== null) {
+            description = description.toString().trim()
+        }
 
         let updatedWorkspace = await workspaceModel.findOne({ _id: workspace_id, workspaceOwner: owner?._id })
         if (!updatedWorkspace) {
@@ -264,7 +335,7 @@ export let update_workspace = async (req, res) => {
 
         let existingWorkspace = await workspaceModel.exists({
             workspaceOwner: owner?._id,
-            name: updated_workspace_name,
+            name: name,
             _id: { $ne: workspace_id }
         })
 
@@ -285,12 +356,16 @@ export let update_workspace = async (req, res) => {
         }
 
         if (logo) updatedWorkspace.logo = logo
-        updatedWorkspace.name = updated_workspace_name
+        updatedWorkspace.name = name
+        if (description !== undefined && description !== null) {
+            updatedWorkspace.description = description
+        }
         await updatedWorkspace.save()
 
         // Redis cache operations :
         // Invalidate all members' caches (including owner) — workspace name changed
         let allMemberships = await workspaceMemberShip.find({ workspace: updatedWorkspace?._id }).select('user').lean()
+
         for (let membership of allMemberships) {
             let member_id = membership?.user?.toString()
             if (member_id) {
@@ -298,6 +373,14 @@ export let update_workspace = async (req, res) => {
                 await redisClient.del(`user:${member_id}:workspace:${updatedWorkspace?._id}`)
             }
         }
+
+        if (owner?._id) {
+            await redisClient.del(`user:${owner._id}:workspaces`)
+            await redisClient.del(`user:${owner._id}:workspace:${updatedWorkspace?._id}`)
+        }
+
+        // create activity :
+        await workspace_activity({ workspace: workspace_id, actor: owner?._id, type: 'workspace details update' })
 
         return res.status(200).json({
             message: "Workspace name updated successfully",
@@ -486,6 +569,9 @@ export let update_workspace_privacy = async (req, res) => {
             }
         }
 
+        // create activity :
+        await workspace_activity({ workspace: workspace_id, actor: user?._id, type: 'update workspace privacy' })
+
         return res.status(200).json({
             message: `Workspace privacy updated to '${privacy}' successfully`,
             success: true,
@@ -641,6 +727,8 @@ export let invite_user_in_workspace = async (req, res) => {
             .lean()
 
 
+        // create activity :
+        await workspace_activity({ workspace: workspace_id, actor: owner?._id, targetUser: invitedUser?._id, type: 'Send Invitation', visibility: 'workspace_owner' })
 
 
         // send the invitation link through nodemailer :
@@ -981,6 +1069,9 @@ export let resend_invitation_to_user = async (req, res) => {
             .populate('invitedUser', 'name email avatar online')
             .lean()
 
+        // create workspace activity :
+        await workspace_activity({ workspace: workspace_id, actor: owner?._id, targetUser: user_id, type: 'Resend Invitation', visibility: 'workspace_owner' })
+
         return res.status(200).json({
             message: 'Workspace invitation resent successfully',
             invitation: populatedInvitation,
@@ -1063,6 +1154,9 @@ export let cancel_user_invitation = async (req, res) => {
         invitation.respondedBy = owner?._id
         invitation.respondedAt = new Date()
         await invitation.save()
+
+        // create workspace activity :
+        await workspace_activity({ workspace: workspace_id, actor: owner?._id, targetUser: invitation?.invitedUser, type: 'Invitation Canceled', visibility: 'workspace_owner' })
 
         return res.status(200).json({
             message: "Invitation cancelled successfully",
@@ -1241,6 +1335,9 @@ export let accept_workspace_invitation = async (req, res) => {
             }
         }
 
+        // create workspace activity :
+        await workspace_activity({ workspace: workspace_id, actor: user?._id, type: 'Accept Invitation', visibility: 'workspace_owner' })
+
         return res.status(200).json({
             message: "Successfully accepted invitation to workspace",
             acceptInvitation: invitation,
@@ -1303,6 +1400,9 @@ export let decline_workspace_invitation = async (req, res) => {
         existingInvitation.respondedBy = user?._id
         existingInvitation.respondedAt = new Date()
         await existingInvitation.save()
+
+        // create workspace activity :
+        await workspace_activity({ workspace: existingInvitation?.workspace, actor: user?._id, type: 'Decline Invitation', visibility: 'workspace_owner' })
 
         return res.status(200).json({
             message: "Successfully declined invitation of this workspace",
@@ -1631,10 +1731,13 @@ export let send_join_request = async (req, res) => {
         }
 
         await createJoinRequest.populate("user", "name email avatar online")
-        
+
+        // create workspace activity :
+        await workspace_activity({ workspace: workspace_id, actor: user?._id, type: 'Send Join Request', visibility: 'workspace_owner' })
+
         // send real time data through socket io 
         let io = req.app.get("io")
-        
+
         // send join req to workspace owner :
         if (io) {
             let workspace_owner_id = workspace?.workspaceOwner?.toString()
@@ -1688,12 +1791,12 @@ export let resend_join_request = async (req, res) => {
         if (!joinRequest) {
             return res.status(404).json({ message: "Join request not found", success: false })
         }
-        
+
         if (joinRequest?.user.toString() !== user?._id.toString()) {
             return res.status(403).json({ message: "You are not authorized to resend this join request", success: false })
         }
 
-        if (joinRequest?.status === 'declined'){
+        if (joinRequest?.status === 'declined') {
             return res.status(400).json({ message: "Join request has been declined and cannot be resent", success: false })
         }
 
@@ -1705,10 +1808,13 @@ export let resend_join_request = async (req, res) => {
 
         await newJoinRequest.populate("workspace", "name workspaceOwner")
         await newJoinRequest.populate("user", "name email avatar online")
-        
+
+        // create workspace activity :
+        await workspace_activity({ workspace: joinRequest?.workspace, actor: user?._id, type: 'Send Join Request', visibility: 'workspace_owner' })
+
         // send real time data through socket io 
         let io = req.app.get("io")
-        
+
         // re-send join req to workspace owner :
         if (io) {
             let workspace_owner_id = newJoinRequest?.workspace?.workspaceOwner?.toString()
@@ -1905,10 +2011,10 @@ export let cancel_join_request = async (req, res) => {
                 message: `Join request cannot be cancelled because its status is '${joinRequest.status}'`,
                 success: false
             })
-        }   
+        }
 
         let workspace = await workspaceModel.findOne({
-            _id : joinRequest?.workspace
+            _id: joinRequest?.workspace
         }).lean()
 
         joinRequest.status = 'cancelled'
@@ -1916,10 +2022,10 @@ export let cancel_join_request = async (req, res) => {
         joinRequest.respondedAt = new Date()
         await joinRequest.save()
 
-        
+
         // send real time data through socket io 
         let io = req.app.get("io")
-        
+
         // send join req to workspace owner :
         if (io) {
             let workspace_owner_id = workspace?.workspaceOwner?.toString()
@@ -2056,7 +2162,7 @@ export let admin_side_type_join_request = async (req, res) => {
             {
                 $project: {
                     _id: 0,
-                    user: { _id: '$user._id', name: '$user.name', email: '$user.email' },
+                    user: { _id: '$user._id', name: '$user.name', email: '$user.email', avatar: '$user.avatar' },
                     declinedCount: 1,
                     expiredCount: 1,
                     latest: { _id: 1, status: 1, updatedAt: 1 }
@@ -2196,6 +2302,9 @@ export let owner_accept_join_request = async (req, res) => {
             await redisClient.del(`user:${member_id}:workspace:${workspace_id}`)
         }
 
+        // create workspace activity :
+        await workspace_activity({ workspace: workspace_id, actor: owner?._id, targetUser: user_id, type: 'Accept Join Request', visibility: 'workspace_owner' })
+
         return res.status(200).json({
             message: "Successfully accepted user joining request",
             success: true,
@@ -2286,14 +2395,16 @@ export let owner_decline_join_request = async (req, res) => {
         joiningRequest.respondedAt = new Date()
         await joiningRequest.save()
 
+        // create workspace activity :
+        await workspace_activity({ workspace: workspace_id, actor: owner?._id, targetUser: user_id, type: 'Decline Join Request', visibility: 'workspace_owner' })
 
         // send real time data through socket io 
         let io = req.app.get("io")
-        
+
         // send join req to workspace owner :
         if (io) {
             let user_id = joiningRequest?.user?.toString()
-    
+
             if (user_id) {
                 io.to(`user_${user_id}`).emit(`declined_user_join_request`, {
                     joinrequest: joiningRequest,
@@ -2301,7 +2412,7 @@ export let owner_decline_join_request = async (req, res) => {
                 })
             }
         }
-        
+
 
         return res.status(200).json({
             message: "Successfully declined user joining request",

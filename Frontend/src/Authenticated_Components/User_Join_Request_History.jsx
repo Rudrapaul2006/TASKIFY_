@@ -27,7 +27,8 @@ const User_Join_Request_History = ({ onClear }) => {
     try {
         let res = await axios.post(`${import.meta.env.VITE_workspace_endpoint}/resend_join_request/${joinRequestId}`, {}, { withCredentials: true })
         if (res.data.success){
-          dispatch(resend_user_join_request(res.data.joinRequest))
+          dispatch(resend_user_join_request(res.data.joinrequest))
+          
           toast.success(res.data.message || "Join request resent successfully")
         }
     } catch (error) {
@@ -39,7 +40,7 @@ const User_Join_Request_History = ({ onClear }) => {
 
   let chipBase = "cursor-pointer rounded-xl border px-4 py-1 text-sm font-medium transition-all duration-200 shrink-0 inline-flex items-center justify-center"
   let chipActive = "border-blue-500 text-blue-500 bg-blue-500/20"
-  let activity_css = `px-2 py-1 flex h-auto lg:h-13 w-24 shrink-0 flex-col items-start justify-center rounded-lg border text-left text-xs font-semibold ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-slate-200" : "border-slate-200 bg-white text-slate-700"}`
+  let activity_css = `px-2 py-1 flex h-auto lg:h-13 w-24 shrink-0 flex-col items-start justify-center rounded-lg border text-left text-xs font-semibold ${theme === "dark" ? "border-white/10 bg-transparent text-slate-200" : "border-slate-200 bg-white text-slate-700"}`
 
 
   return (
@@ -105,14 +106,14 @@ const User_Join_Request_History = ({ onClear }) => {
           <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${theme === "dark" ? "border-slate-500" : "border-blue-600"}`} />
         </div>
       ) : user_type_join_request && user_type_join_request.length > 0 ? (
-        user_type_join_request.map((i) => {
+        user_type_join_request?.map((i) => {
           let wsName = i?.workspace?.name || i?.workspaceName || "Workspace"
           let wsLogo = i?.workspace?.logo
 
           return (
             <div key={i?.workspaceId || i?.workspace?._id || i?.latest?._id}>
               <div
-                className={`flex flex-col gap-4 border-b px-3 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6 ${theme === "dark" ? "border-slate-700 bg-[#18181a] text-white" : "border-slate-200 bg-white text-slate-900"}`}
+                className={`mt-2 flex flex-col gap-4 rounded-md border px-3 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6 ${theme === "dark" ? "border-white/10 bg-transparent text-white" : "border-slate-200 bg-white text-slate-900"}`}
               >
                 {/* Left: Workspace Avatar & Name */}
                 <div className="flex min-w-0 flex-1 items-center gap-3">

@@ -60,6 +60,10 @@ const FindWorkspaceAndSendReq = () => {
     let changeActiveTab = (tab) => {
         setActiveTab(tab)
         localStorage.setItem(tab_storage_key, tab)
+
+        if (tab === 'search_workspace' && findcode?.trim()) {
+            find_workspace_by_findcode()
+        }
     }
 
     // // show the active tab on url :
@@ -99,7 +103,6 @@ const FindWorkspaceAndSendReq = () => {
             setLoaading(false)
         }
     }
-
 
     // send join req to workspace :
     let [send_req_loading, set_send_join_req_loading] = useState(false)
@@ -146,8 +149,8 @@ const FindWorkspaceAndSendReq = () => {
                         type="button"
                         onClick={handleBack}
                         aria-label="Go back"
-                        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-200 ${isDark ? ' text-gray-300 bg-[#2A2A2D] hover:bg-[#343438] hover:text-white duration-150'
-                            : ' bg-gray-200 text-gray-700 hover:bg-gray-300 hover:text-gray-900 duration-150'}`}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors duration-200 ${isDark ? 'border-white/10 text-gray-300 bg-[#2A2A2D] hover:bg-[#343438] hover:text-white duration-150'
+                            : 'border-slate-300 bg-gray-200 text-gray-700 hover:bg-gray-300 hover:text-gray-900 duration-150'}`}
                     >
                         <ArrowLeft size={16} />
                         <span>Back</span>
@@ -155,7 +158,7 @@ const FindWorkspaceAndSendReq = () => {
                 </div>
 
                 {/* Tab Navigation */}
-                <div className={`mt-15 lg:mt-25 flex w-full items-center gap-8 border-b text-sm font-semibold sm:gap-10 ${isDark ? 'border-slate-700/80' : 'border-slate-300'}`}>
+                <div className={`mt-15 lg:mt-25 flex w-full items-center gap-8 border-b text-sm font-semibold sm:gap-10 ${isDark ? 'border-white/10' : 'border-slate-300'}`}>
                     <button
                         type="button"
                         className={`-mb-px border-b-2 px-1 pb-2.5 text-sm font-semibold transition-colors cursor-pointer ${activeTab === 'search_workspace'
@@ -182,7 +185,7 @@ const FindWorkspaceAndSendReq = () => {
                             <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
 
                                 {/* Left Card: Compact Search Box */}
-                                <section className={`h-full min-h-[230px] w-full flex flex-col gap-5 rounded-2xl border p-5 shadow-sm transition-all lg:col-span-6 ${isDark ? 'border-[#2E2E31] bg-[#1F1F21]' : 'border-slate-200 bg-white'}`}>
+                                <section className={`h-full min-h-[230px] w-full flex flex-col gap-5 rounded-2xl border p-5 shadow-sm transition-all lg:col-span-6 ${isDark ? 'border-white/10 bg-[#1F1F21]' : 'border-slate-200 bg-white'}`}>
                                     <div>
                                         <div className="mb-3.5 flex items-center justify-between">
                                             <div> <h2 className="text-md font-bold sm:text-base">Search Workspace by Find Code</h2> </div>
@@ -200,7 +203,7 @@ const FindWorkspaceAndSendReq = () => {
                                                             setWorkspace({})
                                                         }}
                                                         placeholder="ex- [WS-8K2132A]"
-                                                        className={`h-10 w-full rounded-xl border pr-3.5 pl-9.5 text-sm font-semibold uppercase tracking-wider outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${isDark ? 'border-[#3A3A3D] bg-[#2A2A2D] text-white placeholder:text-slate-500 placeholder:normal-case placeholder:tracking-normal' : 'border-slate-300 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal'}`}
+                                                        className={`h-10 w-full rounded-xl border pr-3.5 pl-9.5 text-sm font-semibold uppercase tracking-wider outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${isDark ? 'border-white/10 bg-[#2A2A2D] text-white placeholder:text-slate-500 placeholder:normal-case placeholder:tracking-normal' : 'border-slate-300 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal'}`}
                                                     />
                                                 </div>
                                             </div>
@@ -219,7 +222,7 @@ const FindWorkspaceAndSendReq = () => {
                                         </form>
                                     </div>
 
-                                    <hr className={`mt-0 lg:mt-8 ${isDark ? 'border-[#2E2E31]' : 'border-slate-200'}`} />
+                                    <hr className={`mt-0 lg:mt-8 ${isDark ? 'border-white/10' : 'border-slate-200'}`} />
 
                                     <div className={`pt-0 lg:pt-2 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                         Find code is case sensetive , provide right find code
@@ -227,7 +230,7 @@ const FindWorkspaceAndSendReq = () => {
                                 </section>
 
                                 {/* Right Card: Compact Workspace Result (6 cols) */}
-                                <section className={`h-full w-full flex flex-col justify-center overflow-hidden rounded-2xl border shadow-sm transition-all lg:col-span-6 ${isDark ? 'border-[#2E2E31] bg-[#1F1F21]' : 'border-slate-200 bg-white'}`}>
+                                <section className={`h-full w-full flex flex-col justify-center overflow-hidden rounded-2xl border shadow-sm transition-all lg:col-span-6 ${isDark ? 'border-white/10 bg-[#1F1F21]' : 'border-slate-200 bg-white'}`}>
                                     {loading ? (
                                         <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
                                             <Loader2 size={28} className="animate-spin text-blue-500" />
@@ -235,7 +238,7 @@ const FindWorkspaceAndSendReq = () => {
                                         </div>
                                     ) : hasWorkspace ? (
 
-                                        <div className={`m-4 flex flex-col gap-5 rounded-2xl border p-5 sm:m-4 ${isDark ? 'border-[#343437] bg-[#1F1F21]' : 'border-slate-200 bg-white'}`}>
+                                        <div className={`m-4 flex flex-col gap-5 rounded-2xl border p-5 sm:m-4 ${isDark ? 'border-white/10 bg-[#1F1F21]' : 'border-slate-200 bg-white'}`}>
                                             <div className="flex justify-between items-center gap-4">
                                                 <div className='flex items-center gap-4'>
                                                     {workspace?.logo ? (
@@ -262,7 +265,7 @@ const FindWorkspaceAndSendReq = () => {
 
                                             {/* Workspace Owner, Member Count & Created At */}
                                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                                                <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${isDark ? 'border-[#343437] bg-[#252528]' : 'border-slate-200 bg-slate-50'}`}>
+                                                <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${isDark ? 'border-white/10 bg-[#252528]' : 'border-slate-200 bg-slate-50'}`}>
                                                     <User size={16} className="shrink-0 text-blue-500" />
                                                     <div className="min-w-0">
                                                         <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Owner</p>
@@ -270,7 +273,7 @@ const FindWorkspaceAndSendReq = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${isDark ? 'border-[#343437] bg-[#252528]' : 'border-slate-200 bg-slate-50'}`}>
+                                                <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${isDark ? 'border-white/10 bg-[#252528]' : 'border-slate-200 bg-slate-50'}`}>
                                                     <Users size={16} className="shrink-0 text-indigo-500" />
                                                     <div className="min-w-0">
                                                         <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Members</p>
@@ -278,7 +281,7 @@ const FindWorkspaceAndSendReq = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${isDark ? 'border-[#343437] bg-[#252528]' : 'border-slate-200 bg-slate-50'}`}>
+                                                <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${isDark ? 'border-white/10 bg-[#252528]' : 'border-slate-200 bg-slate-50'}`}>
                                                     <Calendar size={16} className="shrink-0 text-emerald-500" />
                                                     <div className="min-w-0">
                                                         <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Created At</p>
@@ -303,7 +306,7 @@ const FindWorkspaceAndSendReq = () => {
                                                     type="button"
                                                     onClick={() => navigate(`/workspace/details/${workspace?._id}`)}
                                                     className={`inline-flex h-12 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-xl border px-2 text-xs font-semibold transition-colors sm:px-4 sm:text-sm 
-                                                    ${isDark ? 'border-slate-600 text-slate-200 hover:bg-[#2A2A2D]' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
+                                                    ${isDark ? 'border-white/10 text-slate-200 hover:bg-[#2A2A2D]' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
                                                 >
                                                     View details
                                                 </button>

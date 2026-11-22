@@ -10,7 +10,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { setUser } from '@/Redux_Store/userSlice';
 import { toggleTheme } from '@/Redux_Store/themeSlice';
-import { setWorkspace } from '@/Redux_Store/workspaceSlice';
+import { set_selected_workspace, setWorkspace, setWorkspaceMembers, setWorkspaceMembersCount } from '@/Redux_Store/workspaceSlice';
+import { set_organization, set_selected_org } from '@/Redux_Store/organizationSlice';
 
 const Auth_Navbar = () => {
     let navigate = useNavigate()
@@ -31,7 +32,16 @@ const Auth_Navbar = () => {
             if (res.data.success) {
                 toast.success(res.data.message)
                 dispatch(setUser(null))
+
                 dispatch(setWorkspace([]))
+                
+                dispatch(setWorkspaceMembers([]))
+                dispatch(setWorkspaceMembersCount(0))
+                dispatch(set_selected_workspace(null))
+                
+                dispatch(set_organization([]))
+                dispatch(set_selected_org(null))
+
                 if (typeof window !== "undefined") {
                     window.localStorage.removeItem("selectedWorkspaceId")
                 }

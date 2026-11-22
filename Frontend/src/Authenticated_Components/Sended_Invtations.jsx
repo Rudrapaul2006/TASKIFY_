@@ -1,4 +1,4 @@
-﻿﻿import axios from 'axios'
+﻿﻿﻿import axios from 'axios'
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, X } from "lucide-react"
@@ -107,7 +107,7 @@ const Sended_Invtations = () => {
             </div>
           )}
 
-          <hr className={`mb-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+          <hr className={`mb-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
 
           {/* searching and sorting */}
           {(isOwner || isMember) && (
@@ -126,7 +126,7 @@ const Sended_Invtations = () => {
                   }}
                   placeholder="Search name or email"
                   className={`h-10 w-full rounded-xl border pr-3 pl-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 
-                    ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
+                    ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white placeholder:text-slate-400" : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500"}`}
                 />
               </div>
 
@@ -137,7 +137,7 @@ const Sended_Invtations = () => {
                     dispatch(set_pending_invitation_sorting(e.target.value))
                     dispatch(set_pending_invitation_search(''))
                   }}
-                  className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 ${theme === "dark" ? "border-slate-600 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`}
+                  className={`h-10 w-full rounded-xl border px-3 outline-none sm:w-50 ${theme === "dark" ? "border-white/10 bg-[#2A2A2D] text-white focus:ring focus:ring-blue-500" : "border-slate-300 bg-white text-slate-900 focus:ring focus:ring-blue-500"}`}
                 >
                   <option value="">Sort</option>
                   <option value="newest">Newest</option>
@@ -148,7 +148,7 @@ const Sended_Invtations = () => {
             </div>
           )}
 
-          <hr className={`mt-3 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
+          <hr className={`mt-3 border-t ${theme === "dark" ? "border-white/10" : "border-slate-200"}`} />
         </div>
       )}
 
@@ -166,12 +166,14 @@ const Sended_Invtations = () => {
 
         ) : workspace_invitations.length > 0 ? workspace_invitations?.map((i) => (
 
-          <div key={i?._id || i?.id}>
+          <div
+            key={i?._id || i?.id}
+            className={`mt-3 overflow-hidden rounded-md border ${theme === "dark" ? "border-white/10 bg-transparent text-white" : "border-slate-200 bg-white text-slate-900"}`}
+          >
             <div
-              className={`flex flex-col justify-between gap-4 border-b px-2 py-4 last:border-b-0 sm:flex-row sm:items-center sm:px-1 
-                ${theme === "dark" ? "border-slate-700 bg-[#1a1a1b] text-white" : "border-slate-200 bg-white text-slate-900"}`}
+              className="flex flex-col justify-between gap-4 py-3.5 sm:flex-row sm:items-center px-3 lg:px-2"
             >
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="ml-1 flex min-w-0 items-center gap-3">
                 <div
                   aria-hidden="true"
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-semibold uppercase text-white ring-2 ${theme === "dark" ? "ring-slate-700" : "ring-slate-100"}`}
@@ -195,7 +197,7 @@ const Sended_Invtations = () => {
 
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:justify-self-end md:flex-row md:gap-3 lg:items-center lg:gap-5">
                 <div className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-1.5 cursor-not-allowed text-sm font-medium capitalize
-                  ${i?.status === 'pending' ? 'border-yellow-500 text-yellow-400' : i?.status === 'accepted' ? 'border-green-500 text-green-500' : ''}`}>
+                  ${i?.status === 'pending' ? 'border-yellow-600 bg-yellow text-yellow-500' : i?.status === 'accepted' ? 'border-green-500 bg-green-500/10 text-green-500' : ''}`}>
                   {i?.status || "Null"}
                 </div>
 
@@ -203,7 +205,7 @@ const Sended_Invtations = () => {
                   <button
                     onClick={() => cancel_invitation(i?._id?.toString())}
                     type="button"
-                    className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border px-5 py-1.5 text-sm duration-200 ${theme === "dark"
+                    className={`mr-1 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border px-5 py-1.5 text-sm duration-200 ${theme === "dark"
                       ? "border-slate-600 text-slate-200 hover:bg-[#2A2A2D]" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
                   >
                     <X className="mt-1 lg:mt-0.5" color="red" size={18} />
@@ -213,7 +215,6 @@ const Sended_Invtations = () => {
               </div>
             </div>
 
-            <hr className={`border-0 border-t ${theme === "dark" ? "border-slate-700" : "border-slate-200"}`} />
           </div>
 
         )) : (

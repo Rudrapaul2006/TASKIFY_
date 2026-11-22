@@ -146,7 +146,7 @@ export let search_member = async (req, res) => {
         }
 
         let workspace_id = req.params.workspaceid
-        if (!workspace_id || workspace_id === '' || !mongoose.Types.ObjectId.isValid(workspace_id)){
+        if (!workspace_id || workspace_id === '' || !mongoose.Types.ObjectId.isValid(workspace_id)) {
             return res.status(400).json({
                 message: 'please provide a valid workspace id',
                 success: false
@@ -197,7 +197,7 @@ export let search_member = async (req, res) => {
             success: true,
             members: members || []
         })
-        
+
     } catch (error) {
         console.log(error);
         return res.status(500).json({
@@ -224,18 +224,28 @@ export let get_organization = async (req, res) => {
             return res.status(400).json({ message: "Please provide a workspace id", success: false })
         }
 
-        let user_membership_in_workspace = await workspaceMemberShip.findOne({ user: user?._id, workspace: workspace_id })
+        let user_membership_in_workspace = await workspaceMemberShip.findOne({ user: user?._id, workspace: workspace_id }).lean()
         if (!user_membership_in_workspace) {
             return res.status(400).json({ message: 'You are not a member of this workspace', success: false })
         }
 
-        let user_organizations = await organizationModel.find({ workspace: workspace_id })
-        if (user_organizations.length === 0) {
-            return res.status(404).json({ message: 'No organizations found in this workspace', success: false })
+        let organization_query = { workspace: workspace_id }
+
+        if (user_membership_in_workspace.role !== 'workspace_owner') {
+            let user_organization_memberships = await organizationMembership.find({
+                user: user?._id,
+                workspace: workspace_id
+            }).select('organization').lean()
+
+            organization_query._id = {
+                $in: user_organization_memberships.map(membership => membership.organization)
+            }
         }
 
+        let organizations = await organizationModel.find(organization_query).populate('orgAdmin', 'name email')
+
         return res.status(200).json({
-            organizations: user_organizations,
+            organizations,
             success: true
         })
 

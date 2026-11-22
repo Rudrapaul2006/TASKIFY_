@@ -8,7 +8,7 @@ let organizationSlice = createSlice({
         organization: [],
         organization_loading: false,
 
-        selected_org: typeof window !== "undefined" ? window.localStorage.getItem("selected_org_id") : null,
+        selected_org: typeof window !== "undefined" ? window.localStorage.getItem("selected_org_id") : null
     },
 
     reducers: {
@@ -19,12 +19,12 @@ let organizationSlice = createSlice({
             state.organization_loading = action.payload
         },
 
-        Add_Organization: (state, action) => {
+        add_organization: (state, action) => {
             state.organization.push(action.payload)
         },
 
-        selected_org_id: (state, action) => { // Selected org id: set in Add_Organization, read in Sidebar (Redux + localStorage) 
-            state.selected_org = action.payload  
+        set_selected_org: (state, action) => {
+            state.selected_org = action.payload
 
             if (action.payload) {
                 localStorage.setItem("selected_org_id", action.payload)
@@ -37,6 +37,7 @@ let organizationSlice = createSlice({
 
 export let {
     set_organization, set_organization_loading,
-    Add_Organization, selected_org_id
+    add_organization, set_selected_org
 } = organizationSlice.actions
+export let Add_Organization = add_organization
 export default organizationSlice.reducer
