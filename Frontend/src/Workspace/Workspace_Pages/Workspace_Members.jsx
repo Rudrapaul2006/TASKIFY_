@@ -1,10 +1,10 @@
-import Join_Requests from "@/Authenticated_Components/Join_Requests"
-import Sended_Invtations from "@/Authenticated_Components/Sended_Invtations"
+import Join_Requests from "@/Workspace/Workspace_Components/Join_Requests/Join_Requests"
+import Sended_Invtations from "@/Workspace/Workspace_Components/Invitations/Sended_Invtations"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/Components/ui/dialog"
 import { cancel_user_join_request, decline_join_request, set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_workspace_join_request, set_workspace_member_search, set_workspace_member_sorting, setWorkspaceMembers, setWorkspaceMembersCount, setWorkspaceMembersLoading } from "@/Redux_Store/workspaceSlice"
 import { getSocket } from "@/SocketConnection/socket"
-import get_all_join_request from "@/Workspace_Hooks/get_all_join_request"
-import get_all_members from "@/Workspace_Hooks/get_all_members"
+import get_all_join_request from "@/Workspace/Workspace_Hooks/get_all_join_request"
+import get_all_members from "@/Workspace/Workspace_Hooks/get_all_members"
 import { Input } from "@base-ui/react"
 import axios from "axios"
 import { Crown, LogOut, Search, UserPlus, X } from "lucide-react"
@@ -13,7 +13,7 @@ import toast from "react-hot-toast"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate, useParams } from "react-router-dom"
 
-const WorkspaceMembers = () => {
+const Workspace_Members = () => {
   let socket = getSocket()
   let dispatch = useDispatch()
   let navigate = useNavigate()
@@ -406,4 +406,4 @@ const WorkspaceMembers = () => {
   )
 }
 
-export default WorkspaceMembers
+export default Workspace_Members

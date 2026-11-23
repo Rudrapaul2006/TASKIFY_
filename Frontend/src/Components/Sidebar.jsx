@@ -6,11 +6,11 @@ import axios from "axios";
 import { set_selected_workspace, setAddWorkspace } from "@/Redux_Store/workspaceSlice";
 import { set_selected_org } from "@/Redux_Store/organizationSlice";
 import toast from "react-hot-toast";
-import getAllWorkspace from "@/Workspace_Hooks/getAllWorkspace";
+import getAllWorkspace from "@/Workspace/Workspace_Hooks/get_all_workspace";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getSocket } from "@/SocketConnection/socket";
-import Add_Organization from "@/Organization_Components/Add_Organization";
-import get_all_organization from "@/Organization_Hooks/get_all_organization";
+import Add_Organization from "@/Organization/Organization_Components/Add_Organization";
+import get_all_organization from "@/Organization/Organization_Hooks/get_all_organization";
 
 const Sidebar = () => {
     let socket = getSocket()

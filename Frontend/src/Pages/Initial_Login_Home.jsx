@@ -2,7 +2,7 @@ import { ArrowDown, ArrowRight, Briefcase, Building2, KanbanSquare, UserPlus } f
 import React from 'react'
 import { useSelector } from 'react-redux'
 
-const No_workspace_home = () => {
+const Initial_Login_Home = () => {
 
     let { theme } = useSelector(state => state.theme)
     
@@ -89,4 +89,4 @@ const No_workspace_home = () => {
     )
 }
 
-export default No_workspace_home
+export default Initial_Login_Home 

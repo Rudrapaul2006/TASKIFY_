@@ -1,5 +1,5 @@
-import Auth_Navbar from '@/Authenticated_Components/Auth_Navbar'
-import getAllWorkspace from '@/Workspace_Hooks/getAllWorkspace'
+import Auth_Navbar from '@/Components/Auth_Navbar'
+import getAllWorkspace from '@/Workspace/Workspace_Hooks/get_all_workspace'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -7,9 +7,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Search, Building2, Globe, Lock, User, Users, Calendar, ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { set_user_join_requests } from '@/Redux_Store/workspaceSlice'
-import User_Join_Requests from '@/Authenticated_Components/User_Join_Requests'
+import User_Join_Requests from '@/Workspace/Workspace_Components/Join_Requests/My_Join_Requests'
 
-const FindWorkspaceAndSendReq = () => {
+const Find_workspace = () => {
     // Fetch user workspaces [hook]
     getAllWorkspace()
 
@@ -339,4 +339,4 @@ const FindWorkspaceAndSendReq = () => {
     )
 }
 
-export default FindWorkspaceAndSendReq
+export default Find_workspace

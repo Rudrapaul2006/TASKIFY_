@@ -1,6 +1,6 @@
 import { accept_join_request, decline_join_request, set_pending_join_request_search, set_pending_join_request_sort, set_workspace_join_request, set_workspace_join_request_loading, set_workspace_type_join_request, setWorkspaceMembersCount } from '@/Redux_Store/workspaceSlice'
-import get_all_join_request from '@/Workspace_Hooks/get_all_join_request'
-import get_all_members from '@/Workspace_Hooks/get_all_members'
+import get_all_join_request from '@/Workspace/Workspace_Hooks/get_all_join_request'
+import get_all_members from '@/Workspace/Workspace_Hooks/get_all_members'
 import axios from 'axios'
 import { ArrowDownUp, Check, ChevronDown, Filter, Loader2, Search, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'

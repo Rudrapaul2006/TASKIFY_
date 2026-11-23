@@ -1,14 +1,14 @@
-import get_activity from "@/Workspace_Hooks/get_activity"
+import get_activity from "@/Workspace/Workspace_Hooks/get_activity"
 import { useSelector } from "react-redux"
 import { useParams } from "react-router-dom"
 import { Calendar, User } from "lucide-react"
-import { Activity_Action_Message } from "@/Authenticated_Components/workspace_activity_component/Activity_Action_Message"
-import { Activity_Time } from "@/Authenticated_Components/workspace_activity_component/Activity_Time"
-import { Activity_Date } from "@/Authenticated_Components/workspace_activity_component/Activity_Date"
+import { Activity_Action_Message } from "@/Workspace/Workspace_Activity_Component/Activity_Action_Message"
+import { Activity_Time } from "@/Workspace/Workspace_Activity_Component/Activity_Time"
+import { Activity_Date } from "@/Workspace/Workspace_Activity_Component/Activity_Date"
 import Skeleton from "react-loading-skeleton"
 import "react-loading-skeleton/dist/skeleton.css"
 
-const WorkspaceActivity = ({ activeWorkspaceId }) => {
+const Workspace_Activity = ({ activeWorkspaceId }) => {
   let { id: route_id } = useParams()
   let { theme } = useSelector((state) => state.theme)
   let { workspace, workspace_activity, workspace_activity_loading, selected_workspace } = useSelector((state) => state.workspace)
@@ -50,7 +50,7 @@ const WorkspaceActivity = ({ activeWorkspaceId }) => {
             {/* Skeleton Date Header 1 */}
             {/* <div className={`h-5 w-16 rounded animate-pulse mb-2 ${theme === "dark" ? "bg-[#2A2A2D]" : "bg-slate-200"}`} /> */}
 
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
               <div
                 key={i}
                 className={`flex items-center justify-between ${isOwner ? "h-28.5" : "h-25"}  sm:h-12.5 gap-4 px-4 py-2 rounded-xl border ${theme === "dark" ? "border-white/10 bg-[#1F1F21]" : "border-gray-200 bg-white shadow-xs"}`}
@@ -142,4 +142,4 @@ const WorkspaceActivity = ({ activeWorkspaceId }) => {
   )
 }
 
-export default WorkspaceActivity
+export default Workspace_Activity

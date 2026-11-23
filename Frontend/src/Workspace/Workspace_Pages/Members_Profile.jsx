@@ -1,4 +1,4 @@
-import Auth_Navbar from '@/Authenticated_Components/Auth_Navbar'
+import Auth_Navbar from '@/Components/Auth_Navbar'
 import axios from 'axios'
 import { Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'

@@ -1,6 +1,6 @@
 import { set_type_join_request_search, set_type_join_request_sort } from '@/Redux_Store/workspaceSlice'
-import get_all_join_request from '@/Workspace_Hooks/get_all_join_request'
-import get_all_type_join_request from '@/Workspace_Hooks/get_all_type_join_request'
+import get_all_join_request from '@/Workspace/Workspace_Hooks/get_all_join_request'
+import get_all_type_join_request from '@/Workspace/Workspace_Hooks/get_all_type_join_request'
 import { ArrowDownUp, ChevronDown, Filter, Search, X } from 'lucide-react'
 import React, { useEffect } from 'react'
 import toast from 'react-hot-toast'

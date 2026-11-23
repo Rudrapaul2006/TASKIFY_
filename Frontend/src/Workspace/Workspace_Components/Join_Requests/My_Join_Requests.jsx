@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
-import User_Join_Request_History from './User_Join_Request_History'
+import User_Join_Request_History from './My_Join_Request_History'
 import { getSocket } from '@/SocketConnection/socket'
 
 const User_Join_Requests = () => {

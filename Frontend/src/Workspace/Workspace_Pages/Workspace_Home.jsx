@@ -10,14 +10,14 @@ import toast from "react-hot-toast"
 import Skeleton from "react-loading-skeleton"
 import "react-loading-skeleton/dist/skeleton.css"
 import { GoEyeClosed } from "react-icons/go";
-import get_activity from "@/Workspace_Hooks/get_activity"
-import { Activity_Action_Message } from "@/Authenticated_Components/workspace_activity_component/Activity_Action_Message"
-import { Activity_Time } from "@/Authenticated_Components/workspace_activity_component/Activity_Time"
-import { Activity_Date } from "@/Authenticated_Components/workspace_activity_component/Activity_Date"
+import get_activity from "@/Workspace/Workspace_Hooks/get_activity"
+import { Activity_Action_Message } from "@/Workspace/Workspace_Activity_Component/Activity_Action_Message"
+import { Activity_Time } from "@/Workspace/Workspace_Activity_Component/Activity_Time"
+import { Activity_Date } from "@/Workspace/Workspace_Activity_Component/Activity_Date"
 import { FcRight } from "react-icons/fc"
 
 
-const WorkspaceHome = () => {
+const Workspace_Home = () => {
   let params = useParams()
   let workspace_id = params.id
 
@@ -728,4 +728,4 @@ const WorkspaceHome = () => {
   )
 }
 
-export default WorkspaceHome
+export default Workspace_Home

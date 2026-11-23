@@ -4,14 +4,14 @@ import { Toaster } from "react-hot-toast";
 import getCurrentUser from "./User_Hooks/getCurrentUser";
 
 import Home from "./Pages/Home";
-import AuthenticatedHome from "./Authenticated_Pages/AuthenticatedHome";
+import AuthenticatedHome from "./Pages/Authenticated_Home";
 import SignIn from "./Authentication/SignIn";
 import SignUp from "./Authentication/SignUp";
 import useConnectWithSocket from "./SocketConnection/connectWithSocket";
-import UserProfile from "./Authenticated_Pages/UserProfile";
-import Members_Profile from "./Authenticated_Pages/Members_Profile";
-import FindWorkspaceAndSendReq from "./Authenticated_Pages/FindWorkspaceAndSendReq";
-import Workspace_Details from "./Authenticated_Pages/Workspace_Details";
+import UserProfile from "./Pages/User_Profile";
+import Members_Profile from "./Workspace/Workspace_Pages/Members_Profile";
+import FindWorkspaceAndSendReq from "./Workspace/Workspace_Pages/Find_Workspace";
+import Workspace_Details from "./Workspace/Workspace_Pages/Workspace_Details";
 
 const App = () => {
   // Get logged in user  

@@ -3,7 +3,7 @@ import axios from 'axios'
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-const getAllWorkspace = () => {
+const get_all_workspace = () => {
     let dispatch = useDispatch()
     let { user } = useSelector((state) => state.user)
 
@@ -33,4 +33,4 @@ const getAllWorkspace = () => {
     }, [dispatch, user?._id])
 }
 
-export default getAllWorkspace
+export default get_all_workspace

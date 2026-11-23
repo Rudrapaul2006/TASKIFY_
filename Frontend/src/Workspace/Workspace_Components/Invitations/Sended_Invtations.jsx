@@ -3,14 +3,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, X } from "lucide-react"
 import { useDispatch, useSelector } from 'react-redux'
-import { get_invitation } from '@/Workspace_Hooks/get_all_invitations'
+import { get_invitation } from '@/Workspace/Workspace_Hooks/get_all_invitations'
 import toast from 'react-hot-toast'
 import {
   decline_invitation, set_pending_invitation_search, set_pending_invitation_sorting,
   set_workspace_invitations_loading
 } from '@/Redux_Store/workspaceSlice'
 import Invitation_History from './Invitations_History'
-import get_all_members from '@/Workspace_Hooks/get_all_members'
+import get_all_members from '@/Workspace/Workspace_Hooks/get_all_members'
 
 const Sended_Invtations = () => {
   let dispatch = useDispatch()

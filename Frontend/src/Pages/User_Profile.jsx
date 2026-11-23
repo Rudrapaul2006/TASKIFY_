@@ -1,4 +1,4 @@
-import Auth_Navbar from '@/Authenticated_Components/Auth_Navbar'
+import Auth_Navbar from '@/Components/Auth_Navbar'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { FiEdit2 } from 'react-icons/fi'
@@ -10,7 +10,7 @@ import { IoMdArrowBack } from "react-icons/io";
 import { useNavigate } from 'react-router-dom'
 
 
-const UserProfile = () => {
+const User_Profile = () => {
     let { user } = useSelector((state) => state.user)
     let { theme } = useSelector((state) => state.theme)
 
@@ -229,4 +229,4 @@ const UserProfile = () => {
     )
 }
 
-export default UserProfile
+export default User_Profile

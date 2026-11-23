@@ -1,12 +1,12 @@
 import { set_add_invitation, set_pending_invitation_search, set_pending_invitation_sorting, set_resend_workspace_invitation, set_type_invitation, set_type_invitation_search, set_type_invitation_sorting, set_workspace_invitations_loading, set_workspace_type_invitations, set_workspace_type_invitations_loading } from '@/Redux_Store/workspaceSlice'
-import { get_all_type_invitations } from '@/Workspace_Hooks/get_all_type_invitations'
+import { get_all_type_invitations } from '@/Workspace/Workspace_Hooks/get_all_type_invitations'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, Filter, ArrowDownUp, ChevronDown, X } from "lucide-react";
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { get_invitation } from '@/Workspace_Hooks/get_all_invitations'
+import { get_invitation } from '@/Workspace/Workspace_Hooks/get_all_invitations'
 
 const Invitation_History = ({ onClear }) => {
     let dispatch = useDispatch()

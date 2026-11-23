@@ -1,22 +1,22 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import Auth_Navbar from '@/Authenticated_Components/Auth_Navbar'
+import Auth_Navbar from '@/Components/Auth_Navbar'
 import { getSocket } from '@/SocketConnection/socket'
-import getAllWorkspace from '@/Workspace_Hooks/getAllWorkspace'
+import getAllWorkspace from '@/Workspace/Workspace_Hooks/get_all_workspace'
 import Sidebar from '@/Components/Sidebar'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import WorkspaceMembers from './WorkspaceMembers'
-import WorkspaceHome from './WorkspaceHome'
-import WorkspaceActivity from './WorkspaceActivity'
+import WorkspaceMembers from '../Workspace/Workspace_Pages/Workspace_Members'
+import WorkspaceHome from '../Workspace/Workspace_Pages/Workspace_Home'
+import WorkspaceActivity from '../Workspace/Workspace_Pages/Workspace_Activity'
 import { Briefcase, UserPlus, Building2, KanbanSquare, ArrowRight, ArrowDown } from "lucide-react"
-import No_workspace_home from './No_workspace_home'
-import Organization_Home from '@/Organization_Pages/Organization_Home'
-import Organization_Members from '@/Organization_Pages/Organization_Members'
-import Organization_Activity from '@/Organization_Pages/Organization_Activity'
-import Organization_Boards from '@/Organization_Pages/Organization_Boards'
+import Organization_Home from '@/Organization/Organization_Pages/Organization_Home'
+import Organization_Members from '@/Organization/Organization_Pages/Organization_Members'
+import Organization_Activity from '@/Organization/Organization_Pages/Organization_Activity'
+import Organization_Boards from '@/Organization/Organization_Pages/Organization_Boards'
+import Initial_Login_Home from './Initial_login_home'
 
 
-const AuthenticatedHome = () => {
+const Authenticated_Home = () => {
   // Hooks 
   getAllWorkspace() // get each user's workspaces
 
@@ -101,7 +101,7 @@ const AuthenticatedHome = () => {
               </div>
             </div>
 
-          ) : !hasWorkspaces ? (<No_workspace_home />)
+          ) : !hasWorkspaces ? (<Initial_Login_Home />)
             :
             isMembersPage ? (<WorkspaceMembers />)
               :
@@ -123,4 +123,4 @@ const AuthenticatedHome = () => {
   )
 }
 
-export default AuthenticatedHome
+export default Authenticated_Home

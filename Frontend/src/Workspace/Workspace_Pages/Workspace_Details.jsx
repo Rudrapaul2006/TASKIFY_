@@ -1,4 +1,4 @@
-import Auth_Navbar from '@/Authenticated_Components/Auth_Navbar'
+import Auth_Navbar from '@/Components/Auth_Navbar'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -42,7 +42,7 @@ const Workspace_Details = () => {
 
     let card_border = isDark ? 'border-[#2E2E31] bg-[#18181b]' : 'border-slate-200 bg-white'
 
-    // send join request to workspace 
+    // send join request to workspace :
     let [send_req_loading, set_send_join_req_loading] = useState(false)
     let send_join_req = async (workspaceid) => {
         try {
